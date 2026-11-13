@@ -19,7 +19,7 @@ export default function LoginScreen() {
     <Text style={{ color: C.ink, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>Email</Text><Field autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="you@company.com" value={email} onChangeText={setEmail} />
     <Text style={{ color: C.ink, fontSize: 13, fontWeight: '700', marginTop: 18, marginBottom: 8 }}>Password</Text><Field autoComplete="password" secureTextEntry placeholder="Your password" value={password} onChangeText={setPassword} onSubmitEditing={submit} />
     <Button title="Sign in" onPress={submit} busy={busy} style={{ marginTop: 24 }} />
-    <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 22 }}><Text style={{ color: C.moss }}>New to Hoopi? </Text><Link href={'/register' as Href} style={{ color: C.forest, fontWeight: '700' }}>Create an account</Link></View>
+    <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 22 }}><Text style={{ color: C.moss }}>New to Hoopi? </Text><Link href={'/register' as Href} style={{ color: C.primary, fontWeight: '700' }}>Create an account</Link></View>
     <Text style={{ textAlign: 'center', color: C.moss, fontSize: 11, marginTop: 36 }}>Your workspace is encrypted and securely connected.</Text>
   </ScrollView></KeyboardAvoidingView></Screen>;
 }

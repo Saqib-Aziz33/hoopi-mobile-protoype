@@ -22,6 +22,6 @@ export default function RegisterScreen() {
     <Text style={{ color: C.ink, fontWeight: '700', marginTop: 16, marginBottom: 7 }}>Email</Text><Field autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="you@company.com" value={email} onChangeText={setEmail} />
     <Text style={{ color: C.ink, fontWeight: '700', marginTop: 16, marginBottom: 7 }}>Password</Text><Field secureTextEntry autoComplete="new-password" placeholder="At least 8 characters" value={password} onChangeText={setPassword} />
     <Button title="Create account" onPress={submit} busy={busy} style={{ marginTop: 24 }} />
-    <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 20 }}><Text style={{ color: C.moss }}>Already have an account? </Text><Link href={'/login' as Href} style={{ color: C.forest, fontWeight: '700' }}>Sign in</Link></View>
+    <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 20 }}><Text style={{ color: C.moss }}>Already have an account? </Text><Link href={'/login' as Href} style={{ color: C.primary, fontWeight: '700' }}>Sign in</Link></View>
   </ScrollView></KeyboardAvoidingView></Screen>;
 }
