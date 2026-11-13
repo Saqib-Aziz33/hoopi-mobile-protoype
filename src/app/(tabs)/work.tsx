@@ -1,0 +1,24 @@
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { outputsApi, type OutputItem } from '@/lib/api';
+import { C, Card, EmptyState, Heading, Screen, SectionTitle } from '@/components/ui';
+
+const statusLabel: Record<string, string> = { completed: 'Ready', success: 'Ready', running: 'In progress', pending: 'Queued', failed: 'Needs attention', awaiting_approval: 'Needs approval' };
+export default function WorkScreen() {
+  const router = useRouter(); const [runs, setRuns] = useState<OutputItem[]>([]); const [loading, setLoading] = useState(true); const [refreshing, setRefreshing] = useState(false);
+  const load = useCallback(async (refresh = false) => { if (refresh) setRefreshing(true); else setLoading(true); try { setRuns((await outputsApi.list()).runs); } catch { setRuns([]); } finally { setLoading(false); setRefreshing(false); } }, []);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const active = runs.filter(r => ['running', 'pending', 'awaiting_approval'].includes(r.status)).length;
+  const ready = runs.filter(r => ['completed', 'success'].includes(r.status)).length;
+  return <Screen><Heading title="Work" subtitle="Your AI work, in motion" action={<Pressable onPress={() => router.push('/(tabs)/chat?mode=work' as Href)} style={{ flexDirection: 'row', gap: 7, alignItems: 'center', backgroundColor: C.forest, minHeight: 42, borderRadius: 14, paddingHorizontal: 13 }}><Ionicons name="add" size={21} color="white" /><Text style={{ color: 'white', fontSize: 13, fontWeight: '700' }}>New task</Text></Pressable>} />
+    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 18 }}><Card style={{ flex: 1, padding: 14, backgroundColor: '#EAF1E8' }}><Text style={{ color: C.moss, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' }}>In progress</Text><Text style={{ color: C.ink, fontSize: 28, fontWeight: '700', marginTop: 5 }}>{active}</Text></Card><Card style={{ flex: 1, padding: 14 }}><Text style={{ color: C.moss, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' }}>Completed</Text><Text style={{ color: C.ink, fontSize: 28, fontWeight: '700', marginTop: 5 }}>{ready}</Text></Card></View>
+    <SectionTitle>Recent activity</SectionTitle>
+    {loading ? <ActivityIndicator color={C.forest} style={{ marginTop: 30 }} /> : <FlatList data={runs} keyExtractor={item => String(item.id)} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={C.forest} />} contentContainerStyle={{ gap: 10, paddingBottom: 24, flexGrow: 1 }} ListEmptyComponent={<EmptyState icon="◌" title="Your work will show up here" message="Ask Hoopi to handle a task. You can check its progress and results from this screen." />} renderItem={({ item }) => {
+      const status = statusLabel[item.status] ?? item.status.replaceAll('_', ' ');
+      const color = ['failed', 'awaiting_approval'].includes(item.status) ? C.coral : ['completed', 'success'].includes(item.status) ? C.leaf : '#C28B37';
+      return <Card style={{ padding: 15 }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 9 }}><View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color }} /><Text style={{ color, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' }}>{status}</Text><Text style={{ color: '#A2AAA0', fontSize: 11, marginLeft: 'auto' }}>{new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</Text></View><Text numberOfLines={2} style={{ color: C.ink, fontSize: 15, lineHeight: 21, fontWeight: '600' }}>{item.prompt}</Text>{item.result_summary ? <Text numberOfLines={3} style={{ color: C.moss, fontSize: 13, lineHeight: 19, marginTop: 7 }}>{item.result_summary}</Text> : item.error ? <Text style={{ color: C.coral, fontSize: 13, marginTop: 7 }}>{item.error}</Text> : null}</Card>;
+    }} />}
+  </Screen>;
+}
