@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
 import { Link, Redirect, type Href } from 'expo-router';
 import { useAuth } from '@/context/auth';
 import { authApi } from '@/lib/api';
@@ -15,7 +15,7 @@ export default function RegisterScreen() {
     catch (e) { Alert.alert('Could not create account', e instanceof Error ? e.message : 'Please try again.'); }
     finally { setBusy(false); }
   };
-  return <Screen style={{ paddingHorizontal: 24 }}><KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingVertical: 28 }} keyboardShouldPersistTaps="handled">
+  return <Screen style={{ paddingHorizontal: 24 }}><KeyboardAvoidingView style={{ flex: 1 }} behavior="padding"><ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingVertical: 28 }} keyboardShouldPersistTaps="handled">
     <Image source={require('@/assets/images/hoopi-mark.png')} style={{ width: 54, height: 54, borderRadius: 18, marginBottom: 20 }} />
     <Text style={{ color: C.ink, fontSize: 32, fontWeight: '700' }}>Create your account</Text><Text style={{ color: C.moss, marginTop: 8, marginBottom: 26, fontSize: 15 }}>Set up your personal Hoopi workspace.</Text>
     <Text style={{ color: C.ink, fontWeight: '700', marginBottom: 7 }}>Full name</Text><Field autoComplete="name" placeholder="Your name" value={name} onChangeText={setName} />
