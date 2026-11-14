@@ -10,7 +10,11 @@
     "primaryColor": "#4816FB",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/images/icon.png"
+      "icon": "./assets/images/icon.png",
+      "bundleIdentifier": "com.saqibvizzexpodevsteam.hoopimobile",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "softwareKeyboardLayoutMode": "resize",
@@ -18,7 +22,8 @@
         "backgroundColor": "#F8F9FF",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.saqibvizzexpodevsteam.hoopimobile"
     },
     "web": {
       "output": "server",
@@ -39,6 +44,16 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "6c5a2955-6edc-4760-89aa-4884679fa9ef"
+      }
     }
   }
 }
