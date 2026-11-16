@@ -1,13 +1,12 @@
+import { LibrarySearch } from '@/components/library-search';
 import { ResourceRow, ListLoading } from '@/components/resource-row';
 import { useWorkspaceResource } from '@/hooks/use-workspace-resource';
 import { ErrorNotice } from '@/components/error-notice';
 import React, { useState } from 'react';
 import { Alert, FlatList, RefreshControl, Text, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { knowledgeApi, type KnowledgeUpload } from '@/lib/api';
-import { Button, C, EmptyState, Heading, IconButton, Screen, SectionTitle } from '@/components/ui';
+import { C, EmptyState, Heading, IconButton, Screen, SectionTitle } from '@/components/ui';
 
 const fetchItems = async () => (await knowledgeApi.list()).uploads;
 
@@ -22,18 +21,18 @@ export default function KnowledgeScreen() {
     catch (e) { Alert.alert('Upload failed', e instanceof Error ? e.message : 'Please try again.'); }
     finally { setUploading(false); }
   };
+  const [query, setQuery] = useState('');
+  const visibleUploads = uploads.filter(file => file.file_name.toLowerCase().includes(query.trim().toLowerCase()));
   const indexed = uploads.filter(item => item.status === 'completed').length;
-  return <Screen><Heading title="Knowledge" subtitle={`${indexed} of ${uploads.length} documents indexed`} action={<IconButton name="add" accessibilityLabel="Add a knowledge document" onPress={addFile} disabled={uploading} />} />
-    <LinearGradient colors={[C.lavender, '#EEF5FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 20, borderRadius: 24, borderWidth: 1, borderColor: '#E3DEFA', marginBottom: 22 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="sparkles-outline" color={C.primary} size={20} /></View><Text style={{ color: C.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1.4 }}>A LITTLE MORE CONTEXT</Text></View>
-      <Text style={{ color: C.ink, fontSize: 23, lineHeight: 29, fontWeight: '700', letterSpacing: -0.6, marginTop: 16 }}>Better answers start here.</Text>
-      <Text style={{ color: C.moss, fontSize: 14, lineHeight: 21, marginTop: 8 }}>Give Hoopi the documents that matter to you. Keep your knowledge close and your answers in context.</Text>
-      <Button title={uploading ? 'Adding document…' : 'Add a document'} onPress={addFile} busy={uploading} style={{ marginTop: 20 }} />
-      <Text style={{ color: C.moss, fontSize: 11, textAlign: 'center', marginTop: 10 }}>PDF, Word, and PowerPoint</Text>
-    </LinearGradient>
-    <SectionTitle>Documents</SectionTitle>
+  return <Screen><Heading title="Knowledge" subtitle="The documents Hoopi can draw on" action={<IconButton name="add" accessibilityLabel="Add a knowledge document" onPress={addFile} disabled={uploading} />} />
+    <View style={{ borderTopWidth: 1, borderTopColor: C.line, paddingVertical: 20, marginBottom: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 10 }}><Text style={{ color: C.primary, fontSize: 36, fontWeight: '300', fontVariant: ['tabular-nums'] }}>{loading ? '—' : indexed}</Text><Text style={{ color: C.ink, fontSize: 14 }}>documents ready</Text><Text style={{ color: C.moss, fontSize: 11, marginLeft: 'auto' }}>{uploads.length} total</Text></View>
+      <Text style={{ color: C.moss, fontSize: 13, lineHeight: 20, marginTop: 10 }}>Add reference material with the + button. PDF, Word, and PowerPoint documents are supported.</Text>
+    </View>
+    <LibrarySearch value={query} onChange={setQuery} />
+    <SectionTitle>{query ? `${visibleUploads.length} matching documents` : 'Reference shelf'}</SectionTitle>
     {error ? <ErrorNotice message={error} onRetry={() => { void load(); }} /> : null}
-    {loading ? <ListLoading /> : <FlatList data={uploads} keyExtractor={item => String(item.id)} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={C.primary} />} contentContainerStyle={{ gap: 9, paddingBottom: 20, flexGrow: 1 }} ListEmptyComponent={error ? undefined : <EmptyState icon="▤" title="No documents added yet" message="Add a PDF, Word document, or presentation to give Hoopi useful context." />} renderItem={({ item }) => {
+    {loading ? <ListLoading /> : <FlatList keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" data={visibleUploads} keyExtractor={item => String(item.id)} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={C.primary} />} contentContainerStyle={{ paddingBottom: 20, flexGrow: 1 }} ListEmptyComponent={error ? undefined : <EmptyState icon="▤" title={query ? "No matching documents" : "Your shelf is empty"} message={query ? "Try a different document name." : "Add a reference document to give Hoopi useful context."} />} renderItem={({ item }) => {
       const state = item.status === 'completed' ? 'Indexed' : item.status === 'indexing' ? 'Indexing' : item.status === 'failed' ? 'Needs attention' : 'Uploaded';
       return <ResourceRow title={item.file_name} subtitle={`${state} · ${(item.file_size / 1024 / 1024).toFixed(1)} MB`} icon="document-text-outline" status={item.status === 'completed' ? 'ready' : item.status === 'failed' ? 'failed' : 'pending'} />;
     }} />}
