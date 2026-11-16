@@ -110,4 +110,6 @@ See [docs/android-apk-build.md](docs/android-apk-build.md) for EAS account requi
 
 ## Related projects
 
+See the [UI review notes](docs/ui-review.md) for recent motion and reliability changes, stream regression checks, and a device interaction checklist.
+
 The web reference and backend live in sibling `hoopi/` project folders in the repository workspace. The mobile app calls the deployed API at `https://api.hoopi.ai` and does not import the web frontend.
