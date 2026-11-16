@@ -108,11 +108,11 @@ export function SectionTitle({ children }: React.PropsWithChildren) {
   return <Text style={styles.sectionTitle}>{children}</Text>;
 }
 
-export function EmptyState({ title, message, icon = '✦' }: { title: string; message: string; icon?: string }) {
+export function EmptyState({ title, message, icon = 'chatbubble-outline' }: { title: string; message: string; icon?: string }) {
   return (
     <View style={styles.empty}>
       <View style={styles.emptyIconWrap}>
-        <Text style={styles.emptyIcon}>{icon}</Text>
+        <Ionicons name={icon === '▤' ? 'documents-outline' : icon === '✦' ? 'file-tray-outline' : 'chatbubble-outline'} size={26} color={C.moss} />
       </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyMessage}>{message}</Text>
@@ -136,6 +136,6 @@ export const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingHorizontal: 30, paddingVertical: 42 },
   emptyIconWrap: { width: 48, height: 48, borderRadius: 0, alignItems: 'center', justifyContent: 'center', marginBottom: 15 },
   emptyIcon: { color: C.primary, fontSize: 30 },
-  emptyTitle: { color: C.ink, fontFamily: editorialFont, fontSize: 25, fontWeight: '400', letterSpacing: -0.5 },
+  emptyTitle: { textAlign: 'center', color: C.ink, fontFamily: editorialFont, fontSize: 25, fontWeight: '400', letterSpacing: -0.5 },
   emptyMessage: { color: C.moss, fontSize: 14, lineHeight: 21, textAlign: 'center', marginTop: 7 },
 });

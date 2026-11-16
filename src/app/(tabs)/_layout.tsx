@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C } from '@/components/ui';
 import { useAuth } from '@/context/auth';
 
-const icons: Record<string, keyof typeof Ionicons.glyphMap> = { chat: 'chatbubble-ellipses-outline', work: 'sparkles-outline', knowledge: 'book-outline', files: 'folder-outline', settings: 'person-circle-outline' };
+const icons: Record<string, keyof typeof Ionicons.glyphMap> = { chat: 'chatbubble-ellipses-outline', work: 'checkmark-done-outline', knowledge: 'book-outline', files: 'folder-outline', settings: 'person-circle-outline' };
 
 function TabIcon({ name, focused }: { name: keyof typeof Ionicons.glyphMap; focused: boolean }) {
   const scale = useDerivedValue(() => withSpring(focused ? 1 : 0.94, { damping: 16, stiffness: 240 }));
@@ -25,7 +25,7 @@ export default function TabsLayout() {
     tabBarHideOnKeyboard: true,
     tabBarActiveTintColor: C.primary,
     tabBarInactiveTintColor: C.moss,
-    tabBarStyle: { backgroundColor: '#FFFFFF', borderTopColor: '#E9EBF5', height: 60 + bottomPadding, paddingTop: 6, paddingBottom: bottomPadding },
+    tabBarStyle: { backgroundColor: C.canvas, borderTopColor: C.line, height: 60 + bottomPadding, paddingTop: 6, paddingBottom: bottomPadding },
     tabBarItemStyle: { paddingTop: 1 },
     tabBarIconStyle: { marginBottom: 3 },
     tabBarLabelStyle: { fontSize: 10, lineHeight: 14, fontWeight: '600', marginTop: 2 },

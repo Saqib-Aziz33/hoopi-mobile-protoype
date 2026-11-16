@@ -15,9 +15,13 @@ These references informed the direction; Hoopi uses its own visual language and 
 - Treat the app as a working notebook: serif display headings, native system body text, open reading surfaces, and simple rules between records.
 - Preserve the logo colors: violet `#4816FB`, blue `#2559FB`, cyan `#02D1FC`. Use neutral paper surfaces so these colors have a clear role. Violet identifies actions and selection; cyan is a small brand detail.
 - Replace repeated rounded containers with layouts that match the content: numbered conversation starters, a work ledger, and document rows.
-- Keep the original logo. A small orbit line drawing extends its sense of movement without replacing it.
+- Keep the original logo. A small five-ray line drawing echoes the hoopoe crest in the logo without replacing the original mark.
 - Use direct functional copy. Titles describe the content or action rather than repeating promotional slogans.
 - Keep native keyboard handling, safe areas, readable body text, minimum 44-point actions, reduced-motion behavior, and visible selected states.
+
+## Interactions
+
+Files and Knowledge filter loaded records by filename. Work has local All activity, In progress, and Completed views over the recent runs returned by the API. Search and filters do not change backend data.
 
 ## Review
 

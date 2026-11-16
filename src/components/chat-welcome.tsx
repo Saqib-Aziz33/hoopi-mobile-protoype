@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BrandOrbit } from '@/components/brand-orbit';
+import { BrandCrest } from '@/components/brand-crest';
 import { C, editorialFont } from '@/components/ui';
 
 const prompts = {
@@ -12,7 +12,7 @@ export function ChatWelcome({ work, onSelect }: { work: boolean; onSelect: (prom
   return <View style={{ flex: 1, justifyContent: 'center', paddingVertical: 28, paddingHorizontal: 6 }}>
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
       <Text style={{ color: C.moss, fontSize: 11, letterSpacing: 0.5 }}>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</Text>
-      <BrandOrbit size={66} />
+      <BrandCrest size={66} />
     </View>
     <Text style={{ fontFamily: editorialFont, color: C.ink, fontSize: 42, lineHeight: 48, letterSpacing: -1.5 }}>{work ? 'A place to\nmove work forward.' : 'A thought.\nA starting point.'}</Text>
     <Text style={{ color: C.moss, fontSize: 15, lineHeight: 23, marginTop: 18, maxWidth: 295 }}>{work ? 'Tell Hoopi what needs doing. Follow the work and find the result here.' : 'Ask Hoopi a question, bring an idea, or pick up something you’ve been meaning to do.'}</Text>
