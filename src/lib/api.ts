@@ -1,3 +1,4 @@
+import { EventStreamDecoder } from './event-stream';
 import * as SecureStore from 'expo-secure-store';
 
 export const API_BASE_URL = 'https://api.hoopi.ai';
@@ -115,19 +116,25 @@ export const knowledgeApi = {
   },
 };
 
-export async function streamChat(payload: { message: string; conversation_id?: string; mode: 'chat' | 'work' }, onEvent: (event: Record<string, unknown>) => void) {
+export async function streamChat(payload: { message: string; conversation_id?: string; mode: 'chat' | 'work' }, onEvent: (event: Record<string, unknown>) => void, signal?: AbortSignal) {
   const token = await tokenStore.get();
   const workspaceId = await getWorkspaceId();
   const headers = new Headers({ 'Content-Type': 'application/json', Accept: 'text/event-stream' });
   if (token) headers.set('Authorization', `Bearer ${token}`);
   if (workspaceId) headers.set('X-Workspace-Id', String(workspaceId));
   try { headers.set('X-Timezone', Intl.DateTimeFormat().resolvedOptions().timeZone); } catch { /* optional */ }
-  const request = () => fetch(`${API}/agent/chat/stream`, { method: 'POST', headers, body: JSON.stringify(payload), credentials: 'include' });
+  const request = () => fetch(`${API}/agent/chat/stream`, { method: 'POST', headers, body: JSON.stringify(payload), signal, credentials: 'include' });
   let response = await request();
-  if (response.status === 401 && await refreshAccessToken()) {
-    const renewed = await tokenStore.get();
-    if (renewed) headers.set('Authorization', `Bearer ${renewed}`);
-    response = await request();
+  if (response.status === 401) {
+    if (await refreshAccessToken()) {
+      const renewed = await tokenStore.get();
+      if (renewed) headers.set('Authorization', `Bearer ${renewed}`);
+      response = await request();
+    } else {
+      await tokenStore.clear();
+      await setWorkspace(null);
+      sessionExpiredHandler?.();
+    }
   }
   if (!response.ok) {
     const body = await response.json().catch(() => null);
@@ -137,14 +144,19 @@ export async function streamChat(payload: { message: string; conversation_id?: s
   if (!response.body) throw new Error('Streaming is not available on this device.');
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
-  let buffer = '';
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n'); buffer = lines.pop() ?? '';
-    for (const line of lines) if (line.startsWith('data: ')) {
-      try { onEvent(JSON.parse(line.slice(6))); } catch { /* ignore malformed event */ }
+  const events = new EventStreamDecoder(onEvent);
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (signal?.aborted) break;
+      if (done) {
+        events.push(decoder.decode(), true);
+        break;
+      }
+      events.push(decoder.decode(value, { stream: true }));
     }
+  } finally {
+    await reader.cancel().catch(() => undefined);
+    reader.releaseLock();
   }
 }
