@@ -1,3 +1,4 @@
+import { BrandMark } from '@/components/brand-mark';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Markdown from 'react-native-markdown-display';
@@ -39,15 +40,15 @@ const markdownStyles = {
 export function ChatMessage({ role, content, busy = false }: ChatMessageProps) {
   const user = role === 'user';
   return (
-    <Animated.View entering={FadeInDown.duration(260).springify().damping(18)} style={{ alignSelf: user ? 'flex-end' : 'flex-start', maxWidth: '90%' }}>
+    <Animated.View entering={FadeInDown.duration(260).springify().damping(18)} style={{ alignSelf: user ? 'flex-end' : 'flex-start', maxWidth: user ? '88%' : '100%', width: user ? undefined : '100%' }}>
       {user ? (
-        <LinearGradient colors={['#4816FB', '#2559FB']} start={{ x: 0, y: 0.4 }} end={{ x: 1, y: 0.8 }} style={{ borderRadius: 19, borderTopRightRadius: 6, paddingHorizontal: 15, paddingVertical: 12 }}>
+        <LinearGradient colors={['#4816FB', '#2559FB']} start={{ x: 0, y: 0.4 }} end={{ x: 1, y: 0.8 }} style={{ borderRadius: 22, borderTopRightRadius: 7, paddingHorizontal: 17, paddingVertical: 13 }}>
           <Text selectable style={{ color: C.white, fontSize: 15, lineHeight: 22 }}>{content}</Text>
         </LinearGradient>
       ) : (
-        <View style={{ backgroundColor: C.paper, borderRadius: 19, borderTopLeftRadius: 6, paddingHorizontal: 15, paddingVertical: 10, borderWidth: 1, borderColor: C.line }}>
+        <View><View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 9 }}><BrandMark size={23} /><Text style={{ color: C.moss, fontWeight: '600', fontSize: 11 }}>Hoopi</Text></View><View style={{ backgroundColor: C.paper, borderRadius: 20, borderTopLeftRadius: 7, paddingHorizontal: 16, paddingVertical: 13, borderWidth: 1, borderColor: C.line }}>
           {content ? <Markdown style={markdownStyles}>{content}</Markdown> : busy ? <ThinkingIndicator /> : null}
-        </View>
+        </View></View>
       )}
     </Animated.View>
   );
