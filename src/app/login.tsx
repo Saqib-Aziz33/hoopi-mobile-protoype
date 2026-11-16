@@ -15,7 +15,7 @@ export default function LoginScreen() {
     if (!email.trim() || !password) { Alert.alert('Missing details', 'Enter your email and password to continue.'); return; }
     setBusy(true); try { await signIn(email.trim(), password); } catch (e) { Alert.alert('Could not sign in', e instanceof Error ? e.message : 'Please try again.'); } finally { setBusy(false); }
   };
-  return <AuthShell title={'Welcome back.'} subtitle={'Sign in to your workspace. Your conversations, knowledge, and ideas are right here.'}>
+  return <AuthShell title={'Welcome back.'} subtitle={'Sign in to continue your conversations and work.'}>
     <Text style={{ color: C.ink, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>Email</Text><Field autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="you@company.com" value={email} onChangeText={setEmail} />
     <Text style={{ color: C.ink, fontSize: 13, fontWeight: '700', marginTop: 18, marginBottom: 8 }}>Password</Text><PasswordField autoComplete="password" placeholder="Your password" value={password} onChangeText={setPassword} onSubmitEditing={submit} />
     <Button title="Sign in" onPress={submit} busy={busy} style={{ marginTop: 24 }} />

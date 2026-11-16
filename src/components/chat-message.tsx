@@ -1,5 +1,4 @@
 import { BrandMark } from '@/components/brand-mark';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Markdown from 'react-native-markdown-display';
 import { Text, View } from 'react-native';
@@ -42,11 +41,11 @@ export function ChatMessage({ role, content, busy = false }: ChatMessageProps) {
   return (
     <Animated.View entering={FadeInDown.duration(260).springify().damping(18)} style={{ alignSelf: user ? 'flex-end' : 'flex-start', maxWidth: user ? '88%' : '100%', width: user ? undefined : '100%' }}>
       {user ? (
-        <LinearGradient colors={['#4816FB', '#2559FB']} start={{ x: 0, y: 0.4 }} end={{ x: 1, y: 0.8 }} style={{ borderRadius: 22, borderTopRightRadius: 7, paddingHorizontal: 17, paddingVertical: 13 }}>
-          <Text selectable style={{ color: C.white, fontSize: 15, lineHeight: 22 }}>{content}</Text>
-        </LinearGradient>
+        <View style={{ backgroundColor: C.lavender, borderRadius: 14, borderTopRightRadius: 4, paddingHorizontal: 16, paddingVertical: 13 }}>
+          <Text selectable style={{ color: C.ink, fontSize: 15, lineHeight: 22 }}>{content}</Text>
+        </View>
       ) : (
-        <View><View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 9 }}><BrandMark size={23} /><Text style={{ color: C.moss, fontWeight: '600', fontSize: 11 }}>Hoopi</Text></View><View style={{ backgroundColor: C.paper, borderRadius: 20, borderTopLeftRadius: 7, paddingHorizontal: 16, paddingVertical: 13, borderWidth: 1, borderColor: C.line }}>
+        <View><View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 9 }}><BrandMark size={23} /><Text style={{ color: C.moss, fontWeight: '600', fontSize: 11 }}>Hoopi</Text></View><View style={{ paddingVertical: 4, paddingHorizontal: 2 }}>
           {content ? <Markdown style={markdownStyles}>{content}</Markdown> : busy ? <ThinkingIndicator /> : null}
         </View></View>
       )}

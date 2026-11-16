@@ -18,7 +18,7 @@ export default function RegisterScreen() {
     catch (e) { Alert.alert('Could not create account', e instanceof Error ? e.message : 'Please try again.'); }
     finally { setBusy(false); }
   };
-  return <AuthShell title={'Make room for\nbetter work.'} subtitle={'Create your Hoopi account and bring your ideas, documents, and work together.'}>
+  return <AuthShell title={'Your own\nworking space.'} subtitle={'One account for your conversations, reference documents, and tasks.'}>
     <Text style={{ color: C.ink, fontWeight: '700', marginBottom: 7 }}>Full name</Text><Field autoComplete="name" placeholder="Your name" value={name} onChangeText={setName} />
     <Text style={{ color: C.ink, fontWeight: '700', marginTop: 16, marginBottom: 7 }}>Email</Text><Field autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="you@company.com" value={email} onChangeText={setEmail} />
     <Text style={{ color: C.ink, fontWeight: '700', marginTop: 16, marginBottom: 7 }}>Password</Text><PasswordField autoComplete="new-password" placeholder="At least 8 characters" value={password} onChangeText={setPassword} />
