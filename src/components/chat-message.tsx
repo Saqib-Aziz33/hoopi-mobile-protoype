@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Markdown from 'react-native-markdown-display';
 import { Text, View } from 'react-native';
+import { ThinkingIndicator } from '@/components/thinking-indicator';
 import { C } from '@/components/ui';
 
 type ChatMessageProps = {
@@ -45,7 +46,7 @@ export function ChatMessage({ role, content, busy = false }: ChatMessageProps) {
         </LinearGradient>
       ) : (
         <View style={{ backgroundColor: C.paper, borderRadius: 19, borderTopLeftRadius: 6, paddingHorizontal: 15, paddingVertical: 10, borderWidth: 1, borderColor: C.line }}>
-          {content ? <Markdown style={markdownStyles}>{content}</Markdown> : <Text style={{ color: C.ink, fontSize: 15, lineHeight: 22 }}>{busy ? 'Thinking…' : ''}</Text>}
+          {content ? <Markdown style={markdownStyles}>{content}</Markdown> : busy ? <ThinkingIndicator /> : null}
         </View>
       )}
     </Animated.View>

@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type T
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, Easing, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 export const C = {
   canvas: '#F8F9FF',
@@ -25,7 +25,7 @@ export const C = {
 export function Screen({ children, style }: React.PropsWithChildren<{ style?: ViewStyle }>) {
   return (
     <SafeAreaView edges={['top']} style={[styles.screen, style]}>
-      <Animated.View entering={FadeInDown.duration(360)} style={styles.screenInner}>
+      <Animated.View entering={FadeIn.duration(180)} style={styles.screenInner}>
         {children}
       </Animated.View>
     </SafeAreaView>
@@ -34,7 +34,7 @@ export function Screen({ children, style }: React.PropsWithChildren<{ style?: Vi
 
 export function Heading({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   return (
-    <Animated.View entering={FadeInUp.duration(380)} style={styles.heading}>
+    <Animated.View entering={FadeInDown.duration(240).easing(Easing.out(Easing.cubic))} style={styles.heading}>
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
@@ -45,7 +45,7 @@ export function Heading({ title, subtitle, action }: { title: string; subtitle?:
 }
 
 export function Card({ children, style }: React.PropsWithChildren<{ style?: ViewStyle }>) {
-  return <Animated.View entering={FadeInDown.duration(420).springify().damping(19)} style={[styles.card, style]}>{children}</Animated.View>;
+  return <Animated.View entering={FadeIn.duration(220)} style={[styles.card, style]}>{children}</Animated.View>;
 }
 
 export function Button({ title, onPress, secondary = false, disabled = false, busy = false, style }: { title: string; onPress: () => void; secondary?: boolean; disabled?: boolean; busy?: boolean; style?: ViewStyle }) {
@@ -55,6 +55,8 @@ export function Button({ title, onPress, secondary = false, disabled = false, bu
     <Animated.View style={[animatedStyle, style]}>
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={title}
+        accessibilityState={{ disabled: disabled || busy, busy }}
         disabled={disabled || busy}
         onPress={onPress}
         // Reanimated shared values are intentionally updated in native gesture callbacks.
@@ -79,6 +81,7 @@ export function IconButton({ name, onPress, disabled = false, accessibilityLabel
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
+        accessibilityState={{ disabled }}
         disabled={disabled}
         onPress={onPress}
         // Reanimated shared values are intentionally updated in native gesture callbacks.
