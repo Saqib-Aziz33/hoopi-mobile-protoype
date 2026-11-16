@@ -2,6 +2,7 @@ import { Redirect, Tabs, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, View } from 'react-native';
 import Animated, { useAnimatedStyle, useDerivedValue, withSpring } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C } from '@/components/ui';
 import { useAuth } from '@/context/auth';
 
@@ -14,6 +15,8 @@ function TabIcon({ name, focused }: { name: keyof typeof Ionicons.glyphMap; focu
 }
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, 10);
   const { user, loading } = useAuth();
   if (loading) return <View style={{ flex: 1, backgroundColor: C.canvas, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.primary} /></View>;
   if (!user) return <Redirect href={'/login' as Href} />;
@@ -22,7 +25,7 @@ export default function TabsLayout() {
     tabBarHideOnKeyboard: true,
     tabBarActiveTintColor: C.primary,
     tabBarInactiveTintColor: C.moss,
-    tabBarStyle: { backgroundColor: '#FFFFFF', borderTopColor: '#E9EBF5', height: 76, paddingTop: 6, paddingBottom: 5 },
+    tabBarStyle: { backgroundColor: '#FFFFFF', borderTopColor: '#E9EBF5', height: 60 + bottomPadding, paddingTop: 6, paddingBottom: bottomPadding },
     tabBarItemStyle: { paddingTop: 1 },
     tabBarIconStyle: { marginBottom: 3 },
     tabBarLabelStyle: { fontSize: 10, lineHeight: 14, fontWeight: '600', marginTop: 2 },

@@ -15,6 +15,8 @@ export default function ChatScreen() {
   const [historyOpen, setHistoryOpen] = useState(false); const [history, setHistory] = useState<Conversation[]>([]); const [historyLoading, setHistoryLoading] = useState(false);
   const [spaces, setSpaces] = useState<Workspace[]>([]); const [activeSpace, setActiveSpace] = useState<Workspace | null>(null);
   const listRef = useRef<FlatList<Message>>(null);
+  const spaceVersion = useRef(0);
+  const chatWorkspace = useRef<number | null>(null);
   const requestVersion = useRef(0);
   const streamController = useRef<AbortController | null>(null);
   const sending = useRef(false);
@@ -22,13 +24,13 @@ export default function ChatScreen() {
   const [showLatest, setShowLatest] = useState(false);
   const [conversationLoading, setConversationLoading] = useState(false);
   React.useEffect(() => () => { requestVersion.current++; streamController.current?.abort(); }, []);
-  function cancelRequest() {
+  const cancelRequest = useCallback(() => {
     requestVersion.current++;
     streamController.current?.abort();
     sending.current = false;
     setBusy(false);
     setConversationLoading(false);
-  }
+  }, []);
   function scrollToLatest() {
     followLatest.current = true;
     setShowLatest(false);
@@ -36,23 +38,33 @@ export default function ChatScreen() {
   }
   const params = useLocalSearchParams<{ mode?: string }>();
 
+  const newChat = useCallback(() => { cancelRequest(); followLatest.current = true; setShowLatest(false); setConversationId(undefined); setMessages([]); setText(''); setHistoryOpen(false); setHistory([]); }, [cancelRequest]);
+
   const loadSpaces = useCallback(async () => {
+    const version = ++spaceVersion.current;
     try {
-      const values = await workspacesApi.list(); setSpaces(values);
+      const values = await workspacesApi.list();
+      if (version !== spaceVersion.current) return;
+      setSpaces(values);
       if (values.length) {
         const savedId = await getWorkspaceId();
         const selected = values.find(w => w.id === savedId) ?? values[0];
-        setActiveSpace(selected);
+        if (version !== spaceVersion.current) return;
         if (savedId !== selected.id) await setWorkspace(selected.id);
+        if (version !== spaceVersion.current) return;
+        if (chatWorkspace.current !== null && chatWorkspace.current !== selected.id) newChat();
+        chatWorkspace.current = selected.id;
+        setActiveSpace(selected);
       }
     } catch { /* auth or network state is handled by surrounding app */ }
-  }, []);
-  useFocusEffect(useCallback(() => { void loadSpaces(); }, [loadSpaces]));
+  }, [newChat]);
+  useFocusEffect(useCallback(() => { void loadSpaces(); return () => { spaceVersion.current++; }; }, [loadSpaces]));
   React.useEffect(() => { if (params.mode === 'work') setMode('work'); }, [params.mode]);
 
   async function openHistory() {
+    const workspace = chatWorkspace.current;
     setHistoryOpen(true); setHistoryLoading(true);
-    try { setHistory((await conversationsApi.list()).conversations); } catch { setHistory([]); }
+    try { const result = await conversationsApi.list(); if (workspace === chatWorkspace.current) setHistory(result.conversations); } catch (error) { if (workspace === chatWorkspace.current) Alert.alert('Could not load recent chats', error instanceof Error ? error.message : 'Please try again.'); }
     finally { setHistoryLoading(false); }
   }
   async function selectConversation(item: Conversation) {
@@ -68,7 +80,7 @@ export default function ChatScreen() {
     } catch (error) { if (version === requestVersion.current) Alert.alert('Could not open chat', error instanceof Error ? error.message : 'Please try again.'); }
     finally { if (version === requestVersion.current) setConversationLoading(false); }
   }
-  function newChat() { cancelRequest(); followLatest.current = true; setShowLatest(false); setConversationId(undefined); setMessages([]); setText(''); setHistoryOpen(false); }
+
   async function send() {
     const prompt = text.trim(); if (!prompt || sending.current || conversationLoading) return;
     sending.current = true;
@@ -93,8 +105,8 @@ export default function ChatScreen() {
   return <Screen style={{ paddingHorizontal: 0 }}><KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
     <View style={{ paddingHorizontal: 18, paddingTop: 4, paddingBottom: 10, borderBottomColor: C.line, borderBottomWidth: 1 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Pressable onPress={openHistory} style={{ width: 42, height: 42, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: C.paper, borderColor: C.line, borderWidth: 1 }}><Ionicons name="time-outline" size={21} color={C.ink} /></Pressable>
-        <View style={{ alignItems: 'center', flex: 1 }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}><Image source={require('@/assets/images/hoopi-mark.png')} style={{ width: 25, height: 25, borderRadius: 8 }} /><Text style={{ color: C.ink, fontSize: 17, fontWeight: '700', letterSpacing: -0.3 }}>Hoopi</Text></View><Pressable onPress={async () => { if (spaces.length > 1) { const i = spaces.findIndex(w => w.id === activeSpace?.id); const next = spaces[(i + 1) % spaces.length]; await setWorkspace(next.id); newChat(); setActiveSpace(next); } }} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}><View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.cyan }} /><Text numberOfLines={1} style={{ maxWidth: 170, color: C.moss, fontSize: 11 }}>{activeSpace?.name ?? 'Your workspace'}{spaces.length > 1 ? '  ▾' : ''}</Text></Pressable></View>
+        <Pressable accessibilityRole="button" accessibilityLabel="Open recent chats" onPress={openHistory} style={{ width: 42, height: 42, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: C.paper, borderColor: C.line, borderWidth: 1 }}><Ionicons name="time-outline" size={21} color={C.ink} /></Pressable>
+        <View style={{ alignItems: 'center', flex: 1 }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}><Image source={require('@/assets/images/hoopi-mark.png')} style={{ width: 25, height: 25, borderRadius: 8 }} /><Text style={{ color: C.ink, fontSize: 17, fontWeight: '700', letterSpacing: -0.3 }}>Hoopi</Text></View><Pressable onPress={async () => { if (spaces.length > 1) { const i = spaces.findIndex(w => w.id === activeSpace?.id); const next = spaces[(i + 1) % spaces.length]; await setWorkspace(next.id); newChat(); chatWorkspace.current = next.id; setActiveSpace(next); } }} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}><View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.cyan }} /><Text numberOfLines={1} style={{ maxWidth: 170, color: C.moss, fontSize: 11 }}>{activeSpace?.name ?? 'Your workspace'}{spaces.length > 1 ? '  ▾' : ''}</Text></Pressable></View>
         <IconButton name="add" accessibilityLabel="Start a new chat" onPress={newChat} />
       </View>
       <ChatModeSwitch value={mode} onChange={setMode} />
