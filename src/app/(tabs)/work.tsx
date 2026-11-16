@@ -1,27 +1,45 @@
-import { useWorkspaceResource } from '@/hooks/use-workspace-resource';
-import { ErrorNotice } from '@/components/error-notice';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useWorkspaceResource } from '@/hooks/use-workspace-resource';
+import { ErrorNotice } from '@/components/error-notice';
+import { ListLoading } from '@/components/resource-row';
 import { outputsApi, type OutputItem } from '@/lib/api';
 import { C, Card, EmptyState, Heading, Screen, SectionTitle } from '@/components/ui';
 
-const statusLabel: Record<string, string> = { completed: 'Ready', success: 'Ready', running: 'In progress', pending: 'Queued', failed: 'Needs attention', awaiting_approval: 'Needs approval' };
+const statusLabel: Record<string, string> = { completed: 'Completed', success: 'Completed', running: 'In progress', pending: 'Queued', failed: 'Needs attention', awaiting_approval: 'Needs approval' };
 const fetchItems = async () => (await outputsApi.list()).runs;
 
-export default function WorkScreen() {
-  const router = useRouter(); const { data: runs, loading, refreshing, error, load } = useWorkspaceResource<OutputItem[]>(fetchItems, []);
+function Metric({ label, value, icon, blue = false }: { label: string; value?: number; icon: keyof typeof Ionicons.glyphMap; blue?: boolean }) {
+  const color = blue ? C.blue : C.primary;
+  return <Card style={{ flex: 1, padding: 16, backgroundColor: blue ? '#F0F8FF' : '#F5F1FF', borderColor: blue ? '#DCEBFB' : '#E8E0FC' }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Ionicons name={icon} size={19} color={color} /><View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: color }} /></View>
+    <Text style={{ color: C.ink, fontSize: 32, letterSpacing: -1.2, fontWeight: '700', marginTop: 16 }}>{value ?? '—'}</Text>
+    <Text style={{ color: C.moss, fontSize: 12, fontWeight: '500', marginTop: 3 }}>{label}</Text>
+  </Card>;
+}
 
-  const active = runs.filter(r => ['running', 'pending', 'awaiting_approval'].includes(r.status)).length;
-  const ready = runs.filter(r => ['completed', 'success'].includes(r.status)).length;
-  return <Screen><Heading title="Work" subtitle="Your AI work, in motion" action={<Pressable onPress={() => router.push('/(tabs)/chat?mode=work' as Href)} style={{ flexDirection: 'row', gap: 7, alignItems: 'center', backgroundColor: C.primary, minHeight: 42, borderRadius: 14, paddingHorizontal: 13 }}><Ionicons name="add" size={21} color="white" /><Text style={{ color: 'white', fontSize: 13, fontWeight: '700' }}>New task</Text></Pressable>} />
-    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 18 }}><Card style={{ flex: 1, padding: 14, backgroundColor: C.lavender, borderColor: '#E5DEFF' }}><Text style={{ color: C.primary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' }}>In progress</Text><Text style={{ color: C.ink, fontSize: 28, fontWeight: '700', marginTop: 5 }}>{active}</Text></Card><Card style={{ flex: 1, padding: 14, backgroundColor: C.blueTint, borderColor: '#D9EDFF' }}><Text style={{ color: C.blue, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' }}>Completed</Text><Text style={{ color: C.ink, fontSize: 28, fontWeight: '700', marginTop: 5 }}>{ready}</Text></Card></View>
+export default function WorkScreen() {
+  const router = useRouter();
+  const { data: runs, loading, refreshing, error, load } = useWorkspaceResource<OutputItem[]>(fetchItems, []);
+  const active = runs.filter(run => ['running', 'pending', 'awaiting_approval'].includes(run.status)).length;
+  const ready = runs.filter(run => ['completed', 'success'].includes(run.status)).length;
+  return <Screen>
+    <Heading title="Work" subtitle="From an idea to a job well done" action={<Pressable accessibilityRole="button" onPress={() => router.push('/(tabs)/chat?mode=work' as Href)} style={({ pressed }) => ({ flexDirection: 'row', gap: 5, alignItems: 'center', opacity: pressed ? 0.75 : 1, backgroundColor: C.primary, minHeight: 44, borderRadius: 15, paddingHorizontal: 13 })}><Ionicons name="add" size={20} color={C.white} /><Text style={{ color: C.white, fontSize: 13, fontWeight: '600' }}>New task</Text></Pressable>} />
+    <View style={{ flexDirection: 'row', gap: 12, marginBottom: 22 }}><Metric label="In progress" value={loading ? undefined : active} icon="layers-outline" /><Metric label="Completed" value={loading ? undefined : ready} icon="checkmark-done-outline" blue /></View>
     <SectionTitle>Recent activity</SectionTitle>
     {error ? <ErrorNotice message={error} onRetry={() => { void load(); }} /> : null}
-    {loading ? <ActivityIndicator color={C.primary} style={{ marginTop: 30 }} /> : <FlatList data={runs} keyExtractor={item => String(item.id)} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={C.primary} />} contentContainerStyle={{ gap: 10, paddingBottom: 24, flexGrow: 1 }} ListEmptyComponent={error ? undefined : <EmptyState icon="◌" title="Your work will show up here" message="Ask Hoopi to handle a task. You can check its progress and results from this screen." />} renderItem={({ item }) => {
-      const status = statusLabel[item.status] ?? item.status.replaceAll('_', ' ');
-      const color = ['failed', 'awaiting_approval'].includes(item.status) ? C.coral : ['completed', 'success'].includes(item.status) ? C.blue : C.amber;
-      return <Card style={{ padding: 15 }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 9 }}><View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color }} /><Text style={{ color, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' }}>{status}</Text><Text style={{ color: '#9299AF', fontSize: 11, marginLeft: 'auto' }}>{new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</Text></View><Text numberOfLines={2} style={{ color: C.ink, fontSize: 15, lineHeight: 21, fontWeight: '600' }}>{item.prompt}</Text>{item.result_summary ? <Text numberOfLines={3} style={{ color: C.moss, fontSize: 13, lineHeight: 19, marginTop: 7 }}>{item.result_summary}</Text> : item.error ? <Text style={{ color: C.coral, fontSize: 13, marginTop: 7 }}>{item.error}</Text> : null}</Card>;
+    {loading ? <ListLoading /> : <FlatList data={runs} showsVerticalScrollIndicator={false} keyExtractor={item => String(item.id)} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={C.primary} />} contentContainerStyle={{ gap: 12, paddingBottom: 24, flexGrow: 1 }} ListEmptyComponent={error ? undefined : <EmptyState icon="✦" title="Make room for progress" message="Give Hoopi a task. You can follow its progress and find the results right here." />} renderItem={({ item }) => {
+      const completed = ['completed', 'success'].includes(item.status);
+      const color = item.status === 'failed' ? C.red : item.status === 'awaiting_approval' ? C.amber : completed ? C.blue : C.primary;
+      return <Card style={{ padding: 17 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between', marginBottom: 13 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: `${color}0D`, paddingVertical: 5, paddingHorizontal: 8, borderRadius: 8 }}><Ionicons name={completed ? 'checkmark-circle-outline' : item.status === 'failed' ? 'alert-circle-outline' : 'ellipse-outline'} size={13} color={color} /><Text style={{ color, fontSize: 10, fontWeight: '700' }}>{statusLabel[item.status] ?? item.status.replaceAll('_', ' ')}</Text></View>
+          <Text style={{ color: C.moss, fontSize: 11 }}>{new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</Text>
+        </View>
+        <Text numberOfLines={3} style={{ color: C.ink, fontSize: 15, lineHeight: 22, fontWeight: '600' }}>{item.prompt}</Text>
+        {item.result_summary ? <Text numberOfLines={3} style={{ color: C.moss, fontSize: 13, lineHeight: 20, marginTop: 9 }}>{item.result_summary}</Text> : item.error ? <Text style={{ color: C.red, fontSize: 13, lineHeight: 20, marginTop: 9 }}>{item.error}</Text> : null}
+      </Card>;
     }} />}
   </Screen>;
 }

@@ -1,13 +1,13 @@
+import { ResourceRow, ListLoading } from '@/components/resource-row';
 import { useWorkspaceResource } from '@/hooks/use-workspace-resource';
 import { ErrorNotice } from '@/components/error-notice';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, RefreshControl, Text, View } from 'react-native';
+import { Alert, FlatList, RefreshControl, Text, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { knowledgeApi, type KnowledgeUpload } from '@/lib/api';
-import { Button, C, Card, EmptyState, Heading, IconButton, Screen, SectionTitle } from '@/components/ui';
+import { Button, C, EmptyState, Heading, IconButton, Screen, SectionTitle } from '@/components/ui';
 
 const fetchItems = async () => (await knowledgeApi.list()).uploads;
 
@@ -24,12 +24,18 @@ export default function KnowledgeScreen() {
   };
   const indexed = uploads.filter(item => item.status === 'completed').length;
   return <Screen><Heading title="Knowledge" subtitle={`${indexed} of ${uploads.length} documents indexed`} action={<IconButton name="add" accessibilityLabel="Add a knowledge document" onPress={addFile} disabled={uploading} />} />
-    <Animated.View entering={FadeInDown.duration(450).delay(100).springify().damping(18)} style={{ borderRadius: 23, overflow: 'hidden', marginBottom: 19, shadowColor: C.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 18, elevation: 5 }}><LinearGradient colors={['#4816FB', '#2559FB', '#02BDFC']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 19 }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={{ width: 38, height: 38, borderRadius: 13, backgroundColor: '#FFFFFF30', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="sparkles" color="white" size={19} /></View><Text style={{ color: 'white', fontSize: 17, fontWeight: '700' }}>Your knowledge, ready to use</Text></View><Text style={{ color: '#F2F5FF', fontSize: 13, lineHeight: 19, marginTop: 12 }}>Add reference files so Hoopi can answer with the context that matters to you.</Text><Button title={uploading ? 'Adding document…' : 'Add a document'} onPress={addFile} busy={uploading} secondary style={{ alignSelf: 'flex-start', marginTop: 16, minHeight: 40 }} /></LinearGradient></Animated.View>
+    <LinearGradient colors={[C.lavender, '#EEF5FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 20, borderRadius: 24, borderWidth: 1, borderColor: '#E3DEFA', marginBottom: 22 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="sparkles-outline" color={C.primary} size={20} /></View><Text style={{ color: C.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1.4 }}>A LITTLE MORE CONTEXT</Text></View>
+      <Text style={{ color: C.ink, fontSize: 23, lineHeight: 29, fontWeight: '700', letterSpacing: -0.6, marginTop: 16 }}>Better answers start here.</Text>
+      <Text style={{ color: C.moss, fontSize: 14, lineHeight: 21, marginTop: 8 }}>Give Hoopi the documents that matter to you. Keep your knowledge close and your answers in context.</Text>
+      <Button title={uploading ? 'Adding document…' : 'Add a document'} onPress={addFile} busy={uploading} style={{ marginTop: 20 }} />
+      <Text style={{ color: C.moss, fontSize: 11, textAlign: 'center', marginTop: 10 }}>PDF, Word, and PowerPoint</Text>
+    </LinearGradient>
     <SectionTitle>Documents</SectionTitle>
     {error ? <ErrorNotice message={error} onRetry={() => { void load(); }} /> : null}
-    {loading ? <ActivityIndicator color={C.primary} style={{ marginTop: 30 }} /> : <FlatList data={uploads} keyExtractor={item => String(item.id)} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={C.primary} />} contentContainerStyle={{ gap: 9, paddingBottom: 20, flexGrow: 1 }} ListEmptyComponent={error ? undefined : <EmptyState icon="▤" title="No documents added yet" message="Add a PDF, Word document, or presentation to give Hoopi useful context." />} renderItem={({ item }) => {
+    {loading ? <ListLoading /> : <FlatList data={uploads} keyExtractor={item => String(item.id)} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={C.primary} />} contentContainerStyle={{ gap: 9, paddingBottom: 20, flexGrow: 1 }} ListEmptyComponent={error ? undefined : <EmptyState icon="▤" title="No documents added yet" message="Add a PDF, Word document, or presentation to give Hoopi useful context." />} renderItem={({ item }) => {
       const state = item.status === 'completed' ? 'Indexed' : item.status === 'indexing' ? 'Indexing' : item.status === 'failed' ? 'Needs attention' : 'Uploaded';
-      return <Card style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}><View style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: C.blueTint, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="document-text-outline" size={20} color={C.primary} /></View><View style={{ flex: 1 }}><Text numberOfLines={1} style={{ color: C.ink, fontSize: 14, fontWeight: '600' }}>{item.file_name}</Text><Text style={{ color: item.status === 'failed' ? C.coral : C.moss, fontSize: 12, marginTop: 5 }}>{state} · {(item.file_size / 1024 / 1024).toFixed(1)} MB</Text></View><Ionicons name={item.status === 'completed' ? 'checkmark-circle' : item.status === 'failed' ? 'alert-circle' : 'time-outline'} size={19} color={item.status === 'completed' ? C.blue : item.status === 'failed' ? C.coral : '#B68D48'} /></Card>;
+      return <ResourceRow title={item.file_name} subtitle={`${state} · ${(item.file_size / 1024 / 1024).toFixed(1)} MB`} icon="document-text-outline" status={item.status === 'completed' ? 'ready' : item.status === 'failed' ? 'failed' : 'pending'} />;
     }} />}
   </Screen>;
 }
