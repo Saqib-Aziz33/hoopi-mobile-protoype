@@ -12,7 +12,7 @@ export const C = {
   primary: '#4816FB',
   blue: '#2559FB',
   cyan: '#02D1FC',
-  moss: '#727A95',
+  moss: '#626D86',
   line: '#E6E9F3',
   lavender: '#F1EDFF',
   blueTint: '#E8F5FF',
@@ -66,7 +66,7 @@ export function Button({ title, onPress, secondary = false, disabled = false, bu
         onPressOut={() => { scale.value = withSpring(1, { damping: 13, stiffness: 240 }); }}
         style={[styles.button, secondary && styles.buttonSecondary, (disabled || busy) && { opacity: 0.62 }]}
       >
-        {secondary ? null : <LinearGradient colors={['#4816FB', '#2559FB', '#02BDFC']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />}
+        {secondary ? null : <LinearGradient colors={[C.primary, C.blue]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />}
         {busy ? <ActivityIndicator color={secondary ? C.primary : C.white} /> : <Text style={[styles.buttonText, secondary && { color: C.primary }]}>{title}</Text>}
       </Pressable>
     </Animated.View>
@@ -91,7 +91,7 @@ export function IconButton({ name, onPress, disabled = false, accessibilityLabel
         onPressOut={() => { scale.value = withSpring(1, { damping: 13, stiffness: 240 }); }}
         style={({ pressed }) => [styles.iconButton, disabled && { opacity: 0.55 }, pressed && { opacity: 0.9 }]}
       >
-        <LinearGradient colors={['#4816FB', '#2559FB', '#02BDFC']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={[C.primary, C.blue]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
         <Ionicons name={name} size={22} color={C.white} />
       </Pressable>
     </Animated.View>
@@ -99,7 +99,8 @@ export function IconButton({ name, onPress, disabled = false, accessibilityLabel
 }
 
 export function Field(props: TextInputProps) {
-  return <TextInput placeholderTextColor="#9299AF" selectionColor={C.primary} {...props} style={[styles.field, props.style]} />;
+  const [focused, setFocused] = React.useState(false);
+  return <TextInput placeholderTextColor="#8992A8" selectionColor={C.primary} {...props} onFocus={event => { setFocused(true); props.onFocus?.(event); }} onBlur={event => { setFocused(false); props.onBlur?.(event); }} style={[styles.field, focused && { borderColor: C.primary, backgroundColor: C.white }, props.style]} />;
 }
 
 export function SectionTitle({ children }: React.PropsWithChildren) {
@@ -121,19 +122,19 @@ export function EmptyState({ title, message, icon = '✦' }: { title: string; me
 export const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.canvas, paddingHorizontal: 20 },
   screenInner: { flex: 1 },
-  heading: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 8, paddingBottom: 18 },
-  title: { color: C.ink, fontSize: 29, fontWeight: '700', letterSpacing: -0.8 },
-  subtitle: { color: C.moss, fontSize: 13, marginTop: 4 },
-  card: { backgroundColor: C.paper, borderRadius: 22, borderWidth: 1, borderColor: C.line, padding: 16, shadowColor: '#283563', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.045, shadowRadius: 14, elevation: 2 },
-  button: { overflow: 'hidden', backgroundColor: C.primary, minHeight: 49, borderRadius: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
-  buttonSecondary: { backgroundColor: C.lavender },
+  heading: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 14, paddingBottom: 24 },
+  title: { color: C.ink, fontSize: 30, fontWeight: '700', letterSpacing: -1.1 },
+  subtitle: { color: C.moss, fontSize: 14, lineHeight: 20, marginTop: 5 },
+  card: { backgroundColor: C.paper, borderRadius: 20, borderWidth: 1, borderColor: C.line, padding: 16, shadowColor: C.ink, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.025, shadowRadius: 10, elevation: 1 },
+  button: { overflow: 'hidden', backgroundColor: C.primary, minHeight: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
+  buttonSecondary: { backgroundColor: C.lavender, borderWidth: 1, borderColor: '#E4DCFF' },
   buttonText: { color: C.white, fontSize: 15, fontWeight: '700' },
   iconButton: { width: 44, height: 44, borderRadius: 15, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  field: { height: 52, backgroundColor: C.paper, borderRadius: 15, borderWidth: 1, borderColor: C.line, paddingHorizontal: 15, color: C.ink, fontSize: 16 },
-  sectionTitle: { color: C.moss, fontSize: 11, fontWeight: '700', letterSpacing: 1.15, textTransform: 'uppercase', marginBottom: 10, marginTop: 8 },
+  field: { minHeight: 54, backgroundColor: C.paper, borderRadius: 15, borderWidth: 1, borderColor: C.line, paddingHorizontal: 15, color: C.ink, fontSize: 16 },
+  sectionTitle: { color: C.moss, fontSize: 11, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 12, marginTop: 10 },
   empty: { alignItems: 'center', paddingHorizontal: 30, paddingVertical: 42 },
   emptyIconWrap: { width: 62, height: 62, borderRadius: 23, alignItems: 'center', justifyContent: 'center', marginBottom: 15 },
   emptyIcon: { color: C.primary, fontSize: 30 },
-  emptyTitle: { color: C.ink, fontSize: 18, fontWeight: '700' },
+  emptyTitle: { color: C.ink, fontSize: 20, fontWeight: '700', letterSpacing: -0.4 },
   emptyMessage: { color: C.moss, fontSize: 14, lineHeight: 21, textAlign: 'center', marginTop: 7 },
 });
