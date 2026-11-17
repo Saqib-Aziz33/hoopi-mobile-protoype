@@ -1,23 +1,22 @@
 import { randomUUID } from 'expo-crypto';
 import { ChatSession } from '@/lib/chat-session';
-import { ConversationRow } from '@/components/conversation-row';
 import { ChatWelcome } from '@/components/chat-welcome';
 import { BrandMark } from '@/components/brand-mark';
 import React, { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, View } from 'react-native';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { conversationsApi, streamChat, workspacesApi, getWorkspaceId, setWorkspace, type Conversation, type Workspace } from '@/lib/api';
-import { C, EmptyState, Field, IconButton, Screen } from '@/components/ui';
+import { conversationsApi, streamChat, workspacesApi, getWorkspaceId, setWorkspace, type Workspace } from '@/lib/api';
+import { C, Field, IconButton, Screen } from '@/components/ui';
 import { ChatModeSwitch } from '@/components/chat-mode-switch';
 import { ChatMessage } from '@/components/chat-message';
 
 type Message = { id: string; role: 'user' | 'assistant'; content: string };
-export default function ChatScreen() {
+export default function ChatScreen({ savedConversationId }: { savedConversationId?: string }) {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]); const [text, setText] = useState(''); const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<'chat' | 'work'>('chat');
   const [chatSession] = useState(() => new ChatSession(randomUUID));
-  const [historyOpen, setHistoryOpen] = useState(false); const [history, setHistory] = useState<Conversation[]>([]); const [historyLoading, setHistoryLoading] = useState(false);
   const [spaces, setSpaces] = useState<Workspace[]>([]); const [activeSpace, setActiveSpace] = useState<Workspace | null>(null);
   const listRef = useRef<FlatList<Message>>(null);
   const spaceVersion = useRef(0);
@@ -41,9 +40,21 @@ export default function ChatScreen() {
     setShowLatest(false);
     listRef.current?.scrollToEnd({ animated: true });
   }
-  const params = useLocalSearchParams<{ mode?: string }>();
+  const params = useLocalSearchParams<{ mode?: string; startNew?: string }>();
 
-  const newChat = useCallback(() => { cancelRequest(); followLatest.current = true; setShowLatest(false); chatSession.reset(); setMessages([]); setText(''); setHistoryOpen(false); setHistory([]); }, [cancelRequest, chatSession]);
+  const resetChat = useCallback(() => { cancelRequest(); followLatest.current = true; setShowLatest(false); chatSession.reset(); setMessages([]); setText(''); }, [cancelRequest, chatSession]);
+
+  const newChat = useCallback(() => {
+    if (savedConversationId) {
+      router.dismissTo({ pathname: '/(tabs)/chat', params: { startNew: randomUUID() } } as Href);
+    } else resetChat();
+  }, [savedConversationId, router, resetChat]);
+  React.useEffect(() => {
+    if (!savedConversationId && params.startNew) {
+      resetChat();
+      router.setParams({ startNew: undefined });
+    }
+  }, [savedConversationId, params.startNew, resetChat, router]);
 
   const loadSpaces = useCallback(async () => {
     const version = ++spaceVersion.current;
@@ -66,25 +77,31 @@ export default function ChatScreen() {
   useFocusEffect(useCallback(() => { void loadSpaces(); return () => { spaceVersion.current++; }; }, [loadSpaces]));
   React.useEffect(() => { if (params.mode === 'work') setMode('work'); }, [params.mode]);
 
-  async function openHistory() {
-    const workspace = chatWorkspace.current;
-    setHistoryOpen(true); setHistoryLoading(true);
-    try { const result = await conversationsApi.list(); if (workspace === chatWorkspace.current) setHistory(result.conversations); } catch (error) { if (workspace === chatWorkspace.current) Alert.alert('Could not load recent chats', error instanceof Error ? error.message : 'Please try again.'); }
-    finally { setHistoryLoading(false); }
+  function openHistory() {
+    router.push('/(tabs)/chat/history' as Href);
   }
-  async function selectConversation(item: Conversation) {
+  React.useEffect(() => {
+    if (!savedConversationId) return;
     cancelRequest();
+    let active = true;
     const version = requestVersion.current;
-    setHistoryOpen(false); setConversationLoading(true);
-    followLatest.current = true; setShowLatest(false); setText('');
-    try {
-      const detail = await conversationsApi.get(item.id);
-      if (version !== requestVersion.current) return;
-      chatSession.restore(detail.conversation);
-      setMessages(detail.messages.filter(m => m.role === 'user' || m.role === 'assistant').map(m => ({ id: String(m.id), role: m.role as 'user' | 'assistant', content: m.content })));
-    } catch (error) { if (version === requestVersion.current) Alert.alert('Could not open chat', error instanceof Error ? error.message : 'Please try again.'); }
-    finally { if (version === requestVersion.current) setConversationLoading(false); }
-  }
+    setConversationLoading(true);
+    followLatest.current = true;
+    setShowLatest(false);
+    void (async () => {
+      try {
+        const detail = await conversationsApi.get(savedConversationId);
+        if (!active || version !== requestVersion.current) return;
+        chatSession.restore(detail.conversation);
+        setMessages(detail.messages.filter(message => message.role === 'user' || message.role === 'assistant').map(message => ({ id: String(message.id), role: message.role as Message['role'], content: message.content })));
+      } catch (error) {
+        if (active && version === requestVersion.current) Alert.alert('Could not open chat', error instanceof Error ? error.message : 'Please try again.', [{ text: 'Go back', onPress: () => router.back() }]);
+      } finally {
+        if (active && version === requestVersion.current) setConversationLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [savedConversationId, cancelRequest, chatSession, router]);
 
   async function send() {
     const prompt = text.trim(); if (!prompt || sending.current || conversationLoading) return;
@@ -110,6 +127,7 @@ export default function ChatScreen() {
   return <Screen style={{ paddingHorizontal: 0 }}><KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
     <View style={{ paddingHorizontal: 24, paddingTop: 10, borderBottomColor: C.line, borderBottomWidth: 1 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        {savedConversationId ? <Pressable accessibilityRole="button" accessibilityLabel="Go back to recent chats" onPress={() => router.back()} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="arrow-back" size={22} color={C.ink} /></Pressable> : null}
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}><BrandMark size={28} /><Text style={{ color: C.ink, fontSize: 21, fontWeight: '600', letterSpacing: -0.8 }}>Hoopi</Text></View>
           <Pressable accessibilityRole="button" accessibilityLabel="Switch workspace" disabled={spaces.length < 2} onPress={async () => { if (spaces.length > 1) { const i = spaces.findIndex(w => w.id === activeSpace?.id); const next = spaces[(i + 1) % spaces.length]; try { await setWorkspace(next.id); newChat(); chatWorkspace.current = next.id; setActiveSpace(next); } catch { Alert.alert('Could not switch workspace', 'Please try again.'); } } }} style={{ minHeight: 32, flexDirection: 'row', gap: 5, alignItems: 'center' }}><Text numberOfLines={1} style={{ maxWidth: 190, color: C.moss, fontSize: 11 }}>{activeSpace?.name ?? 'Your workspace'}</Text>{spaces.length > 1 ? <Ionicons name="chevron-down" size={11} color={C.moss} /> : null}</Pressable>
@@ -119,11 +137,11 @@ export default function ChatScreen() {
       </View>
       <ChatModeSwitch value={mode} onChange={setMode} />
     </View>
-    {historyOpen ? <View style={{ flex: 1, paddingHorizontal: 18, paddingTop: 16 }}><View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}><Text style={{ color: C.ink, fontSize: 24, letterSpacing: -0.7, fontWeight: '700' }}>Recent chats</Text><Pressable accessibilityRole="button" accessibilityLabel="Close recent chats" onPress={() => setHistoryOpen(false)} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 10 }}><Text style={{ color: C.blue, fontWeight: '700' }}>Close</Text></Pressable></View>{historyLoading ? <ActivityIndicator color={C.primary} /> : <FlatList data={history} keyExtractor={item => item.id} renderItem={({ item }) => <ConversationRow conversation={item} onPress={() => selectConversation(item)} />} ListEmptyComponent={<EmptyState title="No conversations yet" message="Your conversations will appear here." />} />}</View> : <>
+    <>
       {conversationLoading ? <ActivityIndicator color={C.primary} style={{ padding: 12 }} /> : null}
       <FlatList ref={listRef} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 18, paddingVertical: 20, flexGrow: 1, gap: 20 }} data={messages} keyExtractor={m => m.id} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" scrollEventThrottle={100} onScroll={({ nativeEvent: { contentOffset, contentSize, layoutMeasurement } }) => { const nearEnd = contentSize.height - layoutMeasurement.height - contentOffset.y < 100; followLatest.current = nearEnd; setShowLatest(!nearEnd); }} onContentSizeChange={() => { if (followLatest.current) listRef.current?.scrollToEnd({ animated: false }); }} ListEmptyComponent={<ChatWelcome work={mode === 'work'} onSelect={setText} />} renderItem={({ item }) => <ChatMessage role={item.role} content={item.content} busy={busy} />} />
       {showLatest ? <Pressable accessibilityRole="button" accessibilityLabel="Scroll to latest message" onPress={scrollToLatest} style={{ alignSelf: 'center', flexDirection: 'row', gap: 6, alignItems: 'center', padding: 10, borderRadius: 20, backgroundColor: C.lavender }}><Ionicons name="arrow-down" size={16} color={C.primary} /><Text style={{ color: C.primary, fontWeight: '600', fontSize: 12 }}>Latest messages</Text></Pressable> : null}
       <View style={{ paddingHorizontal: 14, paddingTop: 8, paddingBottom: 10, backgroundColor: C.canvas }}><View style={{ minHeight: 54, flexDirection: 'row', alignItems: 'flex-end', gap: 8, backgroundColor: C.white, borderColor: C.line, borderWidth: 1, borderRadius: 14, padding: 7 }}><Field multiline placeholder={mode === 'chat' ? 'Message Hoopi…' : 'Tell Hoopi what to do…'} value={text} onChangeText={setText} style={{ flex: 1, height: 'auto', minHeight: 40, maxHeight: 120, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 10, paddingVertical: 9 }} onSubmitEditing={send} /><Pressable onPress={send} accessibilityRole="button" accessibilityLabel="Send message" disabled={busy || conversationLoading || !text.trim()} style={{ width: 42, height: 42, borderRadius: 9, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: busy || !text.trim() ? C.lavender : C.primary }}><Ionicons name="arrow-up" size={21} color={busy || !text.trim() ? C.primary : C.white} /></Pressable></View><Text style={{ color: C.moss, fontSize: 10, textAlign: 'center', paddingTop: 5 }}>AI can make mistakes. Check important details.</Text></View>
-    </>}
+    </>
   </KeyboardAvoidingView></Screen>;
 }
