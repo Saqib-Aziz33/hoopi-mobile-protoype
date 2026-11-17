@@ -1,4 +1,5 @@
 import { EventStreamDecoder } from './event-stream';
+import type { ChatRequest } from './chat-session';
 import * as SecureStore from 'expo-secure-store';
 
 export const API_BASE_URL = 'https://api.hoopi.ai';
@@ -116,7 +117,7 @@ export const knowledgeApi = {
   },
 };
 
-export async function streamChat(payload: { message: string; conversation_id?: string; mode: 'chat' | 'work' }, onEvent: (event: Record<string, unknown>) => void, signal?: AbortSignal) {
+export async function streamChat(payload: ChatRequest, onEvent: (event: Record<string, unknown>) => void, signal?: AbortSignal) {
   const token = await tokenStore.get();
   const workspaceId = await getWorkspaceId();
   const headers = new Headers({ 'Content-Type': 'application/json', Accept: 'text/event-stream' });

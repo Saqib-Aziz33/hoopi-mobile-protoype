@@ -1,3 +1,5 @@
+import { randomUUID } from 'expo-crypto';
+import { ChatSession } from '@/lib/chat-session';
 import { ConversationRow } from '@/components/conversation-row';
 import { ChatWelcome } from '@/components/chat-welcome';
 import { BrandMark } from '@/components/brand-mark';
@@ -13,7 +15,8 @@ import { ChatMessage } from '@/components/chat-message';
 type Message = { id: string; role: 'user' | 'assistant'; content: string };
 export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([]); const [text, setText] = useState(''); const [busy, setBusy] = useState(false);
-  const [mode, setMode] = useState<'chat' | 'work'>('chat'); const [conversationId, setConversationId] = useState<string>();
+  const [mode, setMode] = useState<'chat' | 'work'>('chat');
+  const [chatSession] = useState(() => new ChatSession(randomUUID));
   const [historyOpen, setHistoryOpen] = useState(false); const [history, setHistory] = useState<Conversation[]>([]); const [historyLoading, setHistoryLoading] = useState(false);
   const [spaces, setSpaces] = useState<Workspace[]>([]); const [activeSpace, setActiveSpace] = useState<Workspace | null>(null);
   const listRef = useRef<FlatList<Message>>(null);
@@ -40,7 +43,7 @@ export default function ChatScreen() {
   }
   const params = useLocalSearchParams<{ mode?: string }>();
 
-  const newChat = useCallback(() => { cancelRequest(); followLatest.current = true; setShowLatest(false); setConversationId(undefined); setMessages([]); setText(''); setHistoryOpen(false); setHistory([]); }, [cancelRequest]);
+  const newChat = useCallback(() => { cancelRequest(); followLatest.current = true; setShowLatest(false); chatSession.reset(); setMessages([]); setText(''); setHistoryOpen(false); setHistory([]); }, [cancelRequest, chatSession]);
 
   const loadSpaces = useCallback(async () => {
     const version = ++spaceVersion.current;
@@ -77,7 +80,7 @@ export default function ChatScreen() {
     try {
       const detail = await conversationsApi.get(item.id);
       if (version !== requestVersion.current) return;
-      setConversationId(detail.conversation.id);
+      chatSession.restore(detail.conversation);
       setMessages(detail.messages.filter(m => m.role === 'user' || m.role === 'assistant').map(m => ({ id: String(m.id), role: m.role as 'user' | 'assistant', content: m.content })));
     } catch (error) { if (version === requestVersion.current) Alert.alert('Could not open chat', error instanceof Error ? error.message : 'Please try again.'); }
     finally { if (version === requestVersion.current) setConversationLoading(false); }
@@ -94,10 +97,10 @@ export default function ChatScreen() {
     const assistant: Message = { id: `${Date.now()}-a`, role: 'assistant', content: '' };
     setMessages(current => [...current, userMessage, assistant]);
     try {
-      await streamChat({ message: prompt, mode, ...(conversationId ? { conversation_id: conversationId } : {}) }, event => {
+      await streamChat(chatSession.request(prompt, mode), event => {
         if (version !== requestVersion.current) return;
         if (event.type === 'token' && typeof event.content === 'string') setMessages(current => current.map(m => m.id === assistant.id ? { ...m, content: m.content + event.content } : m));
-        if (event.type === 'done' && typeof event.conversation_id === 'string') setConversationId(event.conversation_id);
+        chatSession.accept(event);
         if (event.type === 'error') setMessages(current => current.map(m => m.id === assistant.id ? { ...m, content: String(event.message ?? 'Something went wrong.') } : m));
       }, controller.signal);
     } catch (e) { if (version !== requestVersion.current || controller.signal.aborted) return; setMessages(current => current.map(m => m.id === assistant.id ? { ...m, content: e instanceof Error ? e.message : 'Could not send message.' } : m)); }
