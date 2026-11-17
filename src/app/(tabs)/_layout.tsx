@@ -22,7 +22,9 @@ export default function TabsLayout() {
   if (!user) return <Redirect href={'/login' as Href} />;
   return <Tabs screenOptions={({ route }) => ({
     headerShown: false,
-    tabBarHideOnKeyboard: true,
+    // Keep its layout space stable; the native keyboard covers the tab bar.
+    // The composer moves with keyboard progress instead of a second tab animation.
+    tabBarHideOnKeyboard: false,
     tabBarActiveTintColor: C.primary,
     tabBarInactiveTintColor: C.moss,
     tabBarStyle: { backgroundColor: C.canvas, borderTopColor: C.line, height: 60 + bottomPadding, paddingTop: 6, paddingBottom: bottomPadding },

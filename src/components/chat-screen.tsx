@@ -1,9 +1,10 @@
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { randomUUID } from 'expo-crypto';
 import { ChatSession } from '@/lib/chat-session';
 import { ChatWelcome } from '@/components/chat-welcome';
 import { BrandMark } from '@/components/brand-mark';
 import React, { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { conversationsApi, streamChat, workspacesApi, getWorkspaceId, setWorkspace, type Workspace } from '@/lib/api';
@@ -124,7 +125,7 @@ export default function ChatScreen({ savedConversationId }: { savedConversationI
     finally { if (version === requestVersion.current) { sending.current = false; setBusy(false); streamController.current = null; } }
   }
 
-  return <Screen style={{ paddingHorizontal: 0 }}><KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+  return <Screen style={{ paddingHorizontal: 0 }}><KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
     <View style={{ paddingHorizontal: 24, paddingTop: 10, borderBottomColor: C.line, borderBottomWidth: 1 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         {savedConversationId ? <Pressable accessibilityRole="button" accessibilityLabel="Go back to recent chats" onPress={() => router.back()} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="arrow-back" size={22} color={C.ink} /></Pressable> : null}
