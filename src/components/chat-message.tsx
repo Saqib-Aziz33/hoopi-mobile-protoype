@@ -1,5 +1,4 @@
 import { BrandMark } from '@/components/brand-mark';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import Markdown from 'react-native-markdown-display';
 import { Text, View } from 'react-native';
 import { ThinkingIndicator } from '@/components/thinking-indicator';
@@ -39,7 +38,7 @@ const markdownStyles = {
 export function ChatMessage({ role, content, busy = false }: ChatMessageProps) {
   const user = role === 'user';
   return (
-    <Animated.View entering={FadeInDown.duration(260).springify().damping(18)} style={{ alignSelf: user ? 'flex-end' : 'flex-start', maxWidth: user ? '88%' : '100%', width: user ? undefined : '100%' }}>
+    <View style={{ alignSelf: user ? 'flex-end' : 'flex-start', maxWidth: user ? '88%' : '100%', width: user ? undefined : '100%' }}>
       {user ? (
         <View style={{ backgroundColor: C.lavender, borderRadius: 14, borderTopRightRadius: 4, paddingHorizontal: 16, paddingVertical: 13 }}>
           <Text selectable style={{ color: C.ink, fontSize: 15, lineHeight: 22 }}>{content}</Text>
@@ -49,6 +48,6 @@ export function ChatMessage({ role, content, busy = false }: ChatMessageProps) {
           {content ? <Markdown style={markdownStyles}>{content}</Markdown> : busy ? <ThinkingIndicator /> : null}
         </View></View>
       )}
-    </Animated.View>
+    </View>
   );
 }

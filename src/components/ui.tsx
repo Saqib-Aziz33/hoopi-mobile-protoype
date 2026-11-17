@@ -23,10 +23,10 @@ export const C = {
 
 export const editorialFont = Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia' });
 
-export function Screen({ children, style }: React.PropsWithChildren<{ style?: ViewStyle }>) {
+export function Screen({ children, style, animate = true }: React.PropsWithChildren<{ style?: ViewStyle; animate?: boolean }>) {
   return (
     <SafeAreaView edges={['top']} style={[styles.screen, style]}>
-      <Animated.View entering={FadeIn.duration(180)} style={styles.screenInner}>
+      <Animated.View entering={animate ? FadeIn.duration(180) : undefined} style={styles.screenInner}>
         {children}
       </Animated.View>
     </SafeAreaView>

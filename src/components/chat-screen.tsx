@@ -1,9 +1,10 @@
+import { ErrorNotice } from '@/components/error-notice';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { randomUUID } from 'expo-crypto';
 import { ChatSession } from '@/lib/chat-session';
 import { ChatWelcome } from '@/components/chat-welcome';
 import { BrandMark } from '@/components/brand-mark';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,7 +28,15 @@ export default function ChatScreen({ savedConversationId }: { savedConversationI
   const sending = useRef(false);
   const followLatest = useRef(true);
   const [showLatest, setShowLatest] = useState(false);
-  const [conversationLoading, setConversationLoading] = useState(false);
+  const [conversationLoading, setConversationLoading] = useState(Boolean(savedConversationId));
+  const [conversationError, setConversationError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  // Inverted data starts at the latest message without measuring and jumping
+  // through a transcript. Keep the underlying message state chronological.
+  const newestFirst = useMemo(() => [...messages].reverse(), [messages]);
+  function followMessages() {
+    if (followLatest.current) listRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }
   React.useEffect(() => () => { requestVersion.current++; streamController.current?.abort(); }, []);
   const cancelRequest = useCallback(() => {
     requestVersion.current++;
@@ -39,11 +48,11 @@ export default function ChatScreen({ savedConversationId }: { savedConversationI
   function scrollToLatest() {
     followLatest.current = true;
     setShowLatest(false);
-    listRef.current?.scrollToEnd({ animated: true });
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
   }
   const params = useLocalSearchParams<{ mode?: string; startNew?: string }>();
 
-  const resetChat = useCallback(() => { cancelRequest(); followLatest.current = true; setShowLatest(false); chatSession.reset(); setMessages([]); setText(''); }, [cancelRequest, chatSession]);
+  const resetChat = useCallback(() => { cancelRequest(); followLatest.current = true; setShowLatest(false); chatSession.reset(); setConversationError(null); setMessages([]); setText(''); }, [cancelRequest, chatSession]);
 
   const newChat = useCallback(() => {
     if (savedConversationId) {
@@ -87,6 +96,7 @@ export default function ChatScreen({ savedConversationId }: { savedConversationI
     let active = true;
     const version = requestVersion.current;
     setConversationLoading(true);
+    setConversationError(null);
     followLatest.current = true;
     setShowLatest(false);
     void (async () => {
@@ -96,16 +106,16 @@ export default function ChatScreen({ savedConversationId }: { savedConversationI
         chatSession.restore(detail.conversation);
         setMessages(detail.messages.filter(message => message.role === 'user' || message.role === 'assistant').map(message => ({ id: String(message.id), role: message.role as Message['role'], content: message.content })));
       } catch (error) {
-        if (active && version === requestVersion.current) Alert.alert('Could not open chat', error instanceof Error ? error.message : 'Please try again.', [{ text: 'Go back', onPress: () => router.back() }]);
+        if (active && version === requestVersion.current) setConversationError(error instanceof Error ? error.message : 'Please try again.');
       } finally {
         if (active && version === requestVersion.current) setConversationLoading(false);
       }
     })();
     return () => { active = false; };
-  }, [savedConversationId, cancelRequest, chatSession, router]);
+  }, [savedConversationId, loadAttempt, cancelRequest, chatSession]);
 
   async function send() {
-    const prompt = text.trim(); if (!prompt || sending.current || conversationLoading) return;
+    const prompt = text.trim(); if (!prompt || sending.current || conversationLoading || conversationError) return;
     sending.current = true;
     const version = ++requestVersion.current;
     const controller = new AbortController(); streamController.current = controller;
@@ -125,7 +135,7 @@ export default function ChatScreen({ savedConversationId }: { savedConversationI
     finally { if (version === requestVersion.current) { sending.current = false; setBusy(false); streamController.current = null; } }
   }
 
-  return <Screen style={{ paddingHorizontal: 0 }}><KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
+  return <Screen animate={false} style={{ paddingHorizontal: 0 }}><KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
     <View style={{ paddingHorizontal: 24, paddingTop: 10, borderBottomColor: C.line, borderBottomWidth: 1 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         {savedConversationId ? <Pressable accessibilityRole="button" accessibilityLabel="Go back to recent chats" onPress={() => router.back()} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="arrow-back" size={22} color={C.ink} /></Pressable> : null}
@@ -139,10 +149,13 @@ export default function ChatScreen({ savedConversationId }: { savedConversationI
       <ChatModeSwitch value={mode} onChange={setMode} />
     </View>
     <>
-      {conversationLoading ? <ActivityIndicator color={C.primary} style={{ padding: 12 }} /> : null}
-      <FlatList ref={listRef} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 18, paddingVertical: 20, flexGrow: 1, gap: 20 }} data={messages} keyExtractor={m => m.id} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" scrollEventThrottle={100} onScroll={({ nativeEvent: { contentOffset, contentSize, layoutMeasurement } }) => { const nearEnd = contentSize.height - layoutMeasurement.height - contentOffset.y < 100; followLatest.current = nearEnd; setShowLatest(!nearEnd); }} onContentSizeChange={() => { if (followLatest.current) listRef.current?.scrollToEnd({ animated: false }); }} ListEmptyComponent={<ChatWelcome work={mode === 'work'} onSelect={setText} />} renderItem={({ item }) => <ChatMessage role={item.role} content={item.content} busy={busy} />} />
+      <View style={{ flex: 1 }}>
+      {conversationError ? <View style={{ padding: 24 }}><ErrorNotice message={conversationError} onRetry={() => setLoadAttempt(attempt => attempt + 1)} /></View> : null}
+      {!conversationError && conversationLoading ? <View accessibilityLabel="Opening conversation" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.primary} /><Text style={{ color: C.moss, fontSize: 13, marginTop: 12 }}>Opening conversation…</Text></View> : null}
+      {!conversationLoading && !conversationError ? <FlatList ref={listRef} style={{ flex: 1 }} inverted={messages.length > 0} maintainVisibleContentPosition={{ minIndexForVisible: 0 }} contentContainerStyle={{ paddingHorizontal: 18, paddingVertical: 20, flexGrow: 1, gap: 20 }} data={newestFirst} keyExtractor={m => m.id} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" scrollEventThrottle={100} onScroll={({ nativeEvent: { contentOffset } }) => { const nearEnd = contentOffset.y < 100; followLatest.current = nearEnd; setShowLatest(!nearEnd); }} onContentSizeChange={followMessages} ListEmptyComponent={<ChatWelcome work={mode === 'work'} onSelect={setText} />} renderItem={({ item }) => <ChatMessage role={item.role} content={item.content} busy={busy} />} /> : null}
+      </View>
       {showLatest ? <Pressable accessibilityRole="button" accessibilityLabel="Scroll to latest message" onPress={scrollToLatest} style={{ alignSelf: 'center', flexDirection: 'row', gap: 6, alignItems: 'center', padding: 10, borderRadius: 20, backgroundColor: C.lavender }}><Ionicons name="arrow-down" size={16} color={C.primary} /><Text style={{ color: C.primary, fontWeight: '600', fontSize: 12 }}>Latest messages</Text></Pressable> : null}
-      <View style={{ paddingHorizontal: 14, paddingTop: 8, paddingBottom: 10, backgroundColor: C.canvas }}><View style={{ minHeight: 54, flexDirection: 'row', alignItems: 'flex-end', gap: 8, backgroundColor: C.white, borderColor: C.line, borderWidth: 1, borderRadius: 14, padding: 7 }}><Field multiline placeholder={mode === 'chat' ? 'Message Hoopi…' : 'Tell Hoopi what to do…'} value={text} onChangeText={setText} style={{ flex: 1, height: 'auto', minHeight: 40, maxHeight: 120, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 10, paddingVertical: 9 }} onSubmitEditing={send} /><Pressable onPress={send} accessibilityRole="button" accessibilityLabel="Send message" disabled={busy || conversationLoading || !text.trim()} style={{ width: 42, height: 42, borderRadius: 9, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: busy || !text.trim() ? C.lavender : C.primary }}><Ionicons name="arrow-up" size={21} color={busy || !text.trim() ? C.primary : C.white} /></Pressable></View><Text style={{ color: C.moss, fontSize: 10, textAlign: 'center', paddingTop: 5 }}>AI can make mistakes. Check important details.</Text></View>
+      <View style={{ paddingHorizontal: 14, paddingTop: 8, paddingBottom: 10, backgroundColor: C.canvas }}><View style={{ minHeight: 54, flexDirection: 'row', alignItems: 'flex-end', gap: 8, backgroundColor: C.white, borderColor: C.line, borderWidth: 1, borderRadius: 14, padding: 7 }}><Field editable={!conversationLoading && !conversationError} multiline placeholder={mode === 'chat' ? 'Message Hoopi…' : 'Tell Hoopi what to do…'} value={text} onChangeText={setText} style={{ flex: 1, height: 'auto', minHeight: 40, maxHeight: 120, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 10, paddingVertical: 9 }} onSubmitEditing={send} /><Pressable onPress={send} accessibilityRole="button" accessibilityLabel="Send message" disabled={busy || conversationLoading || !!conversationError || !text.trim()} style={{ width: 42, height: 42, borderRadius: 9, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: busy || !text.trim() ? C.lavender : C.primary }}><Ionicons name="arrow-up" size={21} color={busy || !text.trim() ? C.primary : C.white} /></Pressable></View><Text style={{ color: C.moss, fontSize: 10, textAlign: 'center', paddingTop: 5 }}>AI can make mistakes. Check important details.</Text></View>
     </>
   </KeyboardAvoidingView></Screen>;
 }
