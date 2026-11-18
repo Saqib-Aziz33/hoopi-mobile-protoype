@@ -1,5 +1,7 @@
 # Read aloud and voice input
 
+For hands-free conversations with automatic spoken replies, see [Live voice mode](voice-mode.md). The microphone described below dictates a draft for review before sending.
+
 These features follow the separate controls in the web app's `agent-chat.tsx`: read an assistant message aloud, or dictate text into the composer and review it before sending.
 
 ## Read aloud
