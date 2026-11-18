@@ -10,6 +10,7 @@ type ChatMessageProps = {
   content: string;
   busy?: boolean;
   reading?: boolean;
+  readAloudDisabled?: boolean;
   onReadAloud?: () => void;
 };
 
@@ -38,7 +39,7 @@ const markdownStyles = {
   td: { color: C.ink, flex: 1, padding: 6 },
 };
 
-export function ChatMessage({ role, content, busy = false, reading = false, onReadAloud }: ChatMessageProps) {
+export function ChatMessage({ role, content, busy = false, reading = false, readAloudDisabled = false, onReadAloud }: ChatMessageProps) {
   const user = role === 'user';
   return (
     <View style={{ alignSelf: user ? 'flex-end' : 'flex-start', maxWidth: user ? '88%' : '100%', width: user ? undefined : '100%' }}>
@@ -49,7 +50,7 @@ export function ChatMessage({ role, content, busy = false, reading = false, onRe
       ) : (
         <View><View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 9 }}><BrandMark size={23} /><Text style={{ color: C.moss, fontWeight: '600', fontSize: 11 }}>Hoopi</Text></View><View style={{ paddingVertical: 4, paddingHorizontal: 2 }}>
           {content ? <Markdown style={markdownStyles}>{content}</Markdown> : busy ? <ThinkingIndicator /> : null}
-        </View>{onReadAloud && content.trim() ? <Pressable accessibilityRole="button" accessibilityLabel={reading ? 'Stop reading' : 'Read aloud'} accessibilityState={{ selected: reading }} onPress={onReadAloud} style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', minHeight: 44, gap: 6, paddingHorizontal: 4 }}><Ionicons name={reading ? 'stop-circle-outline' : 'volume-medium-outline'} size={17} color={reading ? C.primary : C.moss} /><Text style={{ color: reading ? C.primary : C.moss, fontSize: 11 }}>{reading ? 'Stop reading' : 'Read aloud'}</Text></Pressable> : null}</View>
+        </View>{onReadAloud && content.trim() ? <Pressable accessibilityRole="button" accessibilityLabel={reading ? 'Stop reading' : 'Read aloud'} accessibilityState={{ selected: reading, disabled: readAloudDisabled }} disabled={readAloudDisabled} onPress={onReadAloud} style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', opacity: readAloudDisabled ? 0.4 : 1, minHeight: 44, gap: 6, paddingHorizontal: 4 }}><Ionicons name={reading ? 'stop-circle-outline' : 'volume-medium-outline'} size={17} color={reading ? C.primary : C.moss} /><Text style={{ color: reading ? C.primary : C.moss, fontSize: 11 }}>{reading ? 'Stop reading' : 'Read aloud'}</Text></Pressable> : null}</View>
       )}
     </View>
   );

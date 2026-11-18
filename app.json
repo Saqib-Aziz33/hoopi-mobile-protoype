@@ -40,7 +40,16 @@
         }
       ],
       "expo-secure-store",
-      "expo-speech-recognition"
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow Hoopi to use your microphone to turn your speech into a message.",
+          "speechRecognitionPermission": "Allow Hoopi to use speech recognition for voice input.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
