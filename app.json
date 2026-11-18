@@ -49,7 +49,16 @@
             "com.google.android.googlequicksearchbox"
           ]
         }
-      ]
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Hoopi to use your microphone for voice input and live voice conversations.",
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
+        }
+      ],
+      "./plugins/with-voice-audio"
     ],
     "experiments": {
       "typedRoutes": true,
