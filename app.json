@@ -39,7 +39,8 @@
           "imageWidth": 112
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-speech-recognition"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,6 +1,7 @@
 import { BrandMark } from '@/components/brand-mark';
 import Markdown from 'react-native-markdown-display';
-import { Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, Text, View } from 'react-native';
 import { ThinkingIndicator } from '@/components/thinking-indicator';
 import { C } from '@/components/ui';
 
@@ -8,6 +9,8 @@ type ChatMessageProps = {
   role: 'user' | 'assistant';
   content: string;
   busy?: boolean;
+  reading?: boolean;
+  onReadAloud?: () => void;
 };
 
 const markdownStyles = {
@@ -35,7 +38,7 @@ const markdownStyles = {
   td: { color: C.ink, flex: 1, padding: 6 },
 };
 
-export function ChatMessage({ role, content, busy = false }: ChatMessageProps) {
+export function ChatMessage({ role, content, busy = false, reading = false, onReadAloud }: ChatMessageProps) {
   const user = role === 'user';
   return (
     <View style={{ alignSelf: user ? 'flex-end' : 'flex-start', maxWidth: user ? '88%' : '100%', width: user ? undefined : '100%' }}>
@@ -46,7 +49,7 @@ export function ChatMessage({ role, content, busy = false }: ChatMessageProps) {
       ) : (
         <View><View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 9 }}><BrandMark size={23} /><Text style={{ color: C.moss, fontWeight: '600', fontSize: 11 }}>Hoopi</Text></View><View style={{ paddingVertical: 4, paddingHorizontal: 2 }}>
           {content ? <Markdown style={markdownStyles}>{content}</Markdown> : busy ? <ThinkingIndicator /> : null}
-        </View></View>
+        </View>{onReadAloud && content.trim() ? <Pressable accessibilityRole="button" accessibilityLabel={reading ? 'Stop reading' : 'Read aloud'} accessibilityState={{ selected: reading }} onPress={onReadAloud} style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', minHeight: 44, gap: 6, paddingHorizontal: 4 }}><Ionicons name={reading ? 'stop-circle-outline' : 'volume-medium-outline'} size={17} color={reading ? C.primary : C.moss} /><Text style={{ color: reading ? C.primary : C.moss, fontSize: 11 }}>{reading ? 'Stop reading' : 'Read aloud'}</Text></Pressable> : null}</View>
       )}
     </View>
   );

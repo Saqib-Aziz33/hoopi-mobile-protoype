@@ -1,3 +1,4 @@
+import { useReadAloud } from '@/hooks/use-read-aloud';
 import { ErrorNotice } from '@/components/error-notice';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { randomUUID } from 'expo-crypto';
@@ -16,6 +17,7 @@ import { ChatMessage } from '@/components/chat-message';
 type Message = { id: string; role: 'user' | 'assistant'; content: string };
 export default function ChatScreen({ savedConversationId }: { savedConversationId?: string }) {
   const router = useRouter();
+  const { readingMessageId, readAloud, stopReading } = useReadAloud();
   const [messages, setMessages] = useState<Message[]>([]); const [text, setText] = useState(''); const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<'chat' | 'work'>('chat');
   const [chatSession] = useState(() => new ChatSession(randomUUID));
@@ -52,7 +54,7 @@ export default function ChatScreen({ savedConversationId }: { savedConversationI
   }
   const params = useLocalSearchParams<{ mode?: string; startNew?: string }>();
 
-  const resetChat = useCallback(() => { cancelRequest(); followLatest.current = true; setShowLatest(false); chatSession.reset(); setConversationError(null); setMessages([]); setText(''); }, [cancelRequest, chatSession]);
+  const resetChat = useCallback(() => { void stopReading(); cancelRequest(); followLatest.current = true; setShowLatest(false); chatSession.reset(); setConversationError(null); setMessages([]); setText(''); }, [cancelRequest, chatSession, stopReading]);
 
   const newChat = useCallback(() => {
     if (savedConversationId) {
@@ -152,7 +154,7 @@ export default function ChatScreen({ savedConversationId }: { savedConversationI
       <View style={{ flex: 1 }}>
       {conversationError ? <View style={{ padding: 24 }}><ErrorNotice message={conversationError} onRetry={() => setLoadAttempt(attempt => attempt + 1)} /></View> : null}
       {!conversationError && conversationLoading ? <View accessibilityLabel="Opening conversation" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.primary} /><Text style={{ color: C.moss, fontSize: 13, marginTop: 12 }}>Opening conversation…</Text></View> : null}
-      {!conversationLoading && !conversationError ? <FlatList ref={listRef} style={{ flex: 1 }} inverted={messages.length > 0} maintainVisibleContentPosition={{ minIndexForVisible: 0 }} contentContainerStyle={{ paddingHorizontal: 18, paddingVertical: 20, flexGrow: 1, gap: 20 }} data={newestFirst} keyExtractor={m => m.id} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" scrollEventThrottle={100} onScroll={({ nativeEvent: { contentOffset } }) => { const nearEnd = contentOffset.y < 100; followLatest.current = nearEnd; setShowLatest(!nearEnd); }} onContentSizeChange={followMessages} ListEmptyComponent={<ChatWelcome work={mode === 'work'} onSelect={setText} />} renderItem={({ item }) => <ChatMessage role={item.role} content={item.content} busy={busy} />} /> : null}
+      {!conversationLoading && !conversationError ? <FlatList ref={listRef} style={{ flex: 1 }} inverted={messages.length > 0} maintainVisibleContentPosition={{ minIndexForVisible: 0 }} contentContainerStyle={{ paddingHorizontal: 18, paddingVertical: 20, flexGrow: 1, gap: 20 }} data={newestFirst} keyExtractor={m => m.id} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" scrollEventThrottle={100} onScroll={({ nativeEvent: { contentOffset } }) => { const nearEnd = contentOffset.y < 100; followLatest.current = nearEnd; setShowLatest(!nearEnd); }} onContentSizeChange={followMessages} ListEmptyComponent={<ChatWelcome work={mode === 'work'} onSelect={setText} />} renderItem={({ item }) => <ChatMessage role={item.role} content={item.content} busy={busy} reading={readingMessageId === item.id} onReadAloud={item.role === 'assistant' && !(busy && item.id === messages[messages.length - 1]?.id) ? () => { void readAloud(item.id, item.content); } : undefined} />} /> : null}
       </View>
       {showLatest ? <Pressable accessibilityRole="button" accessibilityLabel="Scroll to latest message" onPress={scrollToLatest} style={{ alignSelf: 'center', flexDirection: 'row', gap: 6, alignItems: 'center', padding: 10, borderRadius: 20, backgroundColor: C.lavender }}><Ionicons name="arrow-down" size={16} color={C.primary} /><Text style={{ color: C.primary, fontWeight: '600', fontSize: 12 }}>Latest messages</Text></Pressable> : null}
       <View style={{ paddingHorizontal: 14, paddingTop: 8, paddingBottom: 10, backgroundColor: C.canvas }}><View style={{ minHeight: 54, flexDirection: 'row', alignItems: 'flex-end', gap: 8, backgroundColor: C.white, borderColor: C.line, borderWidth: 1, borderRadius: 14, padding: 7 }}><Field editable={!conversationLoading && !conversationError} multiline placeholder={mode === 'chat' ? 'Message Hoopi…' : 'Tell Hoopi what to do…'} value={text} onChangeText={setText} style={{ flex: 1, height: 'auto', minHeight: 40, maxHeight: 120, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 10, paddingVertical: 9 }} onSubmitEditing={send} /><Pressable onPress={send} accessibilityRole="button" accessibilityLabel="Send message" disabled={busy || conversationLoading || !!conversationError || !text.trim()} style={{ width: 42, height: 42, borderRadius: 9, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: busy || !text.trim() ? C.lavender : C.primary }}><Ionicons name="arrow-up" size={21} color={busy || !text.trim() ? C.primary : C.white} /></Pressable></View><Text style={{ color: C.moss, fontSize: 10, textAlign: 'center', paddingTop: 5 }}>AI can make mistakes. Check important details.</Text></View>
