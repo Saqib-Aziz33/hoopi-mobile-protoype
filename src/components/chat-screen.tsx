@@ -1,3 +1,5 @@
+import { useVoiceMode } from '@/hooks/use-voice-mode';
+import { VoiceModeButton, VoiceModePanel, VoiceModeError } from '@/components/voice-mode-panel';
 import { useVoiceInput } from '@/hooks/use-voice-input';
 import { VoiceInputButton, VoiceInputStatus } from '@/components/voice-input-controls';
 import { useReadAloud } from '@/hooks/use-read-aloud';
@@ -38,6 +40,9 @@ export default function ChatScreen({ savedConversationId }: { savedConversationI
   const inputDisabled = busy || conversationLoading || !!conversationError;
   const voice = useVoiceInput(text, setText, stopReading, inputDisabled);
   const { cancel: cancelVoice, clearError: clearVoiceError } = voice;
+  const beforeVoiceCall = useCallback(async () => { cancelVoice(); clearVoiceError(); Keyboard.dismiss(); await stopReading(); }, [cancelVoice, clearVoiceError, stopReading]);
+  const liveVoice = useVoiceMode(activeSpace?.id, beforeVoiceCall, inputDisabled);
+  const { stop: stopVoiceCall, clear: clearVoiceCall } = liveVoice;
   // Inverted data starts at the latest message without measuring and jumping
   // through a transcript. Keep the underlying message state chronological.
   const newestFirst = useMemo(() => [...messages].reverse(), [messages]);
@@ -59,13 +64,14 @@ export default function ChatScreen({ savedConversationId }: { savedConversationI
   }
   const params = useLocalSearchParams<{ mode?: string; startNew?: string }>();
 
-  const resetChat = useCallback(() => { cancelVoice(); clearVoiceError(); void stopReading(); cancelRequest(); followLatest.current = true; setShowLatest(false); chatSession.reset(); setConversationError(null); setMessages([]); setText(''); }, [cancelRequest, chatSession, stopReading, cancelVoice, clearVoiceError]);
+  const resetChat = useCallback(() => { stopVoiceCall(); clearVoiceCall(); cancelVoice(); clearVoiceError(); void stopReading(); cancelRequest(); followLatest.current = true; setShowLatest(false); chatSession.reset(); setConversationError(null); setMessages([]); setText(''); }, [cancelRequest, chatSession, stopReading, cancelVoice, clearVoiceError, stopVoiceCall, clearVoiceCall]);
 
   const newChat = useCallback(() => {
+    stopVoiceCall(); clearVoiceCall();
     if (savedConversationId) {
       router.dismissTo({ pathname: '/(tabs)/chat', params: { startNew: randomUUID() } } as Href);
     } else resetChat();
-  }, [savedConversationId, router, resetChat]);
+  }, [savedConversationId, router, resetChat, stopVoiceCall, clearVoiceCall]);
   React.useEffect(() => {
     if (!savedConversationId && params.startNew) {
       resetChat();
@@ -122,7 +128,7 @@ export default function ChatScreen({ savedConversationId }: { savedConversationI
   }, [savedConversationId, loadAttempt, cancelRequest, chatSession]);
 
   async function send() {
-    const prompt = text.trim(); if (!prompt || sending.current || conversationLoading || conversationError || voice.active) return;
+    const prompt = text.trim(); if (!prompt || sending.current || conversationLoading || conversationError || voice.active || liveVoice.active) return;
     sending.current = true;
     const version = ++requestVersion.current;
     const controller = new AbortController(); streamController.current = controller;
@@ -148,14 +154,15 @@ export default function ChatScreen({ savedConversationId }: { savedConversationI
         {savedConversationId ? <Pressable accessibilityRole="button" accessibilityLabel="Go back to recent chats" onPress={() => router.back()} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="arrow-back" size={22} color={C.ink} /></Pressable> : null}
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}><BrandMark size={28} /><Text style={{ color: C.ink, fontSize: 21, fontWeight: '600', letterSpacing: -0.8 }}>Hoopi</Text></View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Switch workspace" disabled={spaces.length < 2} onPress={async () => { if (spaces.length > 1) { const i = spaces.findIndex(w => w.id === activeSpace?.id); const next = spaces[(i + 1) % spaces.length]; try { await setWorkspace(next.id); newChat(); chatWorkspace.current = next.id; setActiveSpace(next); } catch { Alert.alert('Could not switch workspace', 'Please try again.'); } } }} style={{ minHeight: 32, flexDirection: 'row', gap: 5, alignItems: 'center' }}><Text numberOfLines={1} style={{ maxWidth: 190, color: C.moss, fontSize: 11 }}>{activeSpace?.name ?? 'Your workspace'}</Text>{spaces.length > 1 ? <Ionicons name="chevron-down" size={11} color={C.moss} /> : null}</Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Switch workspace" disabled={spaces.length < 2} onPress={async () => { if (spaces.length > 1) { const i = spaces.findIndex(w => w.id === activeSpace?.id); const next = spaces[(i + 1) % spaces.length]; try { stopVoiceCall(); await setWorkspace(next.id); newChat(); chatWorkspace.current = next.id; setActiveSpace(next); } catch { Alert.alert('Could not switch workspace', 'Please try again.'); } } }} style={{ minHeight: 32, flexDirection: 'row', gap: 5, alignItems: 'center' }}><Text numberOfLines={1} style={{ maxWidth: 190, color: C.moss, fontSize: 11 }}>{activeSpace?.name ?? 'Your workspace'}</Text>{spaces.length > 1 ? <Ionicons name="chevron-down" size={11} color={C.moss} /> : null}</Pressable>
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel="Open recent chats" onPress={openHistory} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="time-outline" size={22} color={C.ink} /></Pressable>
         <IconButton name="add" accessibilityLabel="Start a new chat" onPress={newChat} />
       </View>
-      <ChatModeSwitch value={mode} onChange={setMode} />
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 6 }}><ChatModeSwitch tabWidth={liveVoice.configured ? 92 : 112} value={mode} onChange={value => { if (!liveVoice.active) setMode(value); }} />{liveVoice.configured && !liveVoice.active ? <VoiceModeButton disabled={inputDisabled} onPress={liveVoice.start} /> : null}</View>
     </View>
-    <>
+    {liveVoice.active ? <VoiceModePanel state={liveVoice} onStop={liveVoice.stop} onMute={liveVoice.toggleMuted} /> : <>
+      <VoiceModeError error={liveVoice.error} onDismiss={liveVoice.clear} />
       <View style={{ flex: 1 }}>
       {conversationError ? <View style={{ padding: 24 }}><ErrorNotice message={conversationError} onRetry={() => setLoadAttempt(attempt => attempt + 1)} /></View> : null}
       {!conversationError && conversationLoading ? <View accessibilityLabel="Opening conversation" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.primary} /><Text style={{ color: C.moss, fontSize: 13, marginTop: 12 }}>Opening conversation…</Text></View> : null}
@@ -163,6 +170,6 @@ export default function ChatScreen({ savedConversationId }: { savedConversationI
       </View>
       {showLatest ? <Pressable accessibilityRole="button" accessibilityLabel="Scroll to latest message" onPress={scrollToLatest} style={{ alignSelf: 'center', flexDirection: 'row', gap: 6, alignItems: 'center', padding: 10, borderRadius: 20, backgroundColor: C.lavender }}><Ionicons name="arrow-down" size={16} color={C.primary} /><Text style={{ color: C.primary, fontWeight: '600', fontSize: 12 }}>Latest messages</Text></Pressable> : null}
       <View style={{ paddingHorizontal: 14, paddingTop: 8, paddingBottom: 10, backgroundColor: C.canvas }}><View style={{ minHeight: 54, flexDirection: 'row', alignItems: 'flex-end', gap: 8, backgroundColor: C.white, borderColor: C.line, borderWidth: 1, borderRadius: 14, padding: 7 }}><Field editable={!conversationLoading && !conversationError && !voice.active} multiline placeholder={mode === 'chat' ? 'Message Hoopi…' : 'Tell Hoopi what to do…'} value={text} onChangeText={setText} style={{ flex: 1, height: 'auto', minHeight: 40, maxHeight: 120, borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 10, paddingVertical: 9 }} onSubmitEditing={send} /><VoiceInputButton status={voice.status} disabled={inputDisabled} onPress={() => { if (!voice.active) Keyboard.dismiss(); voice.toggle(); }} /><Pressable onPress={send} accessibilityRole="button" accessibilityLabel="Send message" disabled={inputDisabled || voice.active || !text.trim()} style={{ width: 42, height: 42, borderRadius: 9, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: inputDisabled || voice.active || !text.trim() ? C.lavender : C.primary }}><Ionicons name="arrow-up" size={21} color={inputDisabled || voice.active || !text.trim() ? C.primary : C.white} /></Pressable></View><VoiceInputStatus status={voice.status} error={voice.error} onCancel={voice.cancel} onDismiss={voice.clearError} /><Text style={{ color: C.moss, fontSize: 10, textAlign: 'center', paddingTop: 5 }}>AI can make mistakes. Check important details.</Text></View>
-    </>
+    </>}
   </KeyboardAvoidingView></Screen>;
 }
