@@ -1,6 +1,6 @@
 # Live voice mode
 
-Tap **Voice** next to Conversation / Work mode, allow microphone access, and speak. Hoopi replies aloud automatically. The call screen shows the latest question and answer, listening/thinking/speaking states, Mute, and End call. Speech can interrupt the assistant, using the workspace assistant's Vapi configuration. An animated crest uses the existing logo colors and respects reduced motion.
+Tap the **audio-lines icon** at the bottom right of the composer, between the dictation microphone and Send, allow microphone access, and speak. Its icon and placement match the web composer. Hoopi replies aloud automatically. The call screen shows the latest question and answer, listening/thinking/speaking states, Mute, and End call. Speech can interrupt the assistant, using the workspace assistant's Vapi configuration. An animated crest uses the existing logo colors and respects reduced motion.
 
 Voice mode is separate from the composer's microphone, which dictates a draft, and the Read aloud action on a completed text reply. Starting a call cancels dictation and read-aloud playback. Ending a call restores the text conversation and draft. As in the reference frontend, live transcripts are not added to recent text-chat history.
 
@@ -32,6 +32,29 @@ npx eas-cli@latest build --platform android --profile preview
 ```
 
 For a development client, first install `expo-dev-client` using `npx expo install expo-dev-client`, then use the existing EAS development profile. See [APK builds](android-apk-build.md). iOS also needs a new native build.
+
+### Android release build: missing AV1 decoder interface
+
+WebRTC 155's Android artifact contains `Dav1dDecoderJni` with a reference to `org.webrtc.Dav1dDecoder$Natives`, but does not ship that interface or the `Dav1dDecoder` class. The dangling JNI bridge is not referenced by the other Java classes. R8 still reports it during `:app:minifyReleaseWithR8` because WebRTC's consumer rules keep its package.
+
+`app.json` configures the SDK-compatible `expo-build-properties` plugin to append this precise rule during prebuild:
+
+```proguard
+-dontwarn org.webrtc.Dav1dDecoder$Natives
+```
+
+This covers the unused video-decoder reference while keeping release optimization and all other missing-class checks enabled. Hoopi's voice transport remains audio-only. Do not add a blanket `-dontwarn org.webrtc.**`, disable R8, or edit generated native files to work around this error. Revisit the rule when upgrading WebRTC.
+
+After installing the updated dependencies, retry the cloud build:
+
+```bash
+npm install
+npx eas-cli@latest build --platform android --profile preview --clear-cache
+```
+
+The missing reference was verified in both `org.jitsi:webrtc` 155.0.0 and 155.0.1 Android artifacts from [Maven Central](https://repo.maven.apache.org/maven2/org/jitsi/webrtc/). See [Expo's extraProguardRules option](https://docs.expo.dev/versions/v58.0.0/sdk/build-properties/#pluginconfigtypeandroid) for the generated configuration.
+
+The fix was checked with a fresh Android prebuild in a temporary directory: the generated `android/app/proguard-rules.pro` contains the exact rule once, and the release Gradle configuration includes that file. TypeScript, lint and all 39 regression tests also pass. A new cloud release build is still needed to verify APK generation.
 
 ## Lifecycle and failure handling
 
