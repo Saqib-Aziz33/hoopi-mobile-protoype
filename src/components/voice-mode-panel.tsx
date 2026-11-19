@@ -9,8 +9,11 @@ import type { VoiceError, VoiceState } from '@/lib/voice-mode';
 const labels = { idle: 'Voice mode', requesting: 'Preparing microphone', connecting: 'Connecting to Hoopi', listening: 'Your turn', thinking: 'Thinking it through', speaking: 'Hoopi is speaking', ending: 'Ending conversation' };
 
 export function VoiceModeButton({ disabled, onPress }: { disabled: boolean; onPress: () => void }) {
-  return <Pressable accessibilityRole="button" accessibilityLabel="Start voice conversation" disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.launch, { opacity: disabled ? 0.4 : 1, backgroundColor: pressed ? C.lavender : 'transparent' }]}>
-    <Ionicons name="headset-outline" size={18} color={C.primary} /><Text style={{ color: C.primary, fontSize: 12, fontWeight: '600' }}>Voice</Text>
+  return <Pressable accessibilityRole="button" accessibilityLabel="Start voice conversation" accessibilityHint="Talk to Hoopi and hear spoken replies" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.launch, { opacity: disabled ? 0.4 : 1, backgroundColor: pressed ? C.lavender : 'transparent' }]}>
+    {/* Lucide AudioLines geometry, matching the web composer with native strokes. */}
+    <View accessible={false} importantForAccessibility="no-hide-descendants" style={{ width: 24, height: 24 }}>
+      {[[2, 10, 13], [6, 6, 17], [10, 3, 21], [14, 8, 15], [18, 5, 18], [22, 10, 13]].map(([x, start, end]) => <View key={x} style={{ position: 'absolute', left: x - 1, top: start - 1, width: 2, height: end - start + 2, borderRadius: 1, backgroundColor: C.moss }} />)}
+    </View>
   </Pressable>;
 }
 
@@ -47,7 +50,7 @@ export function VoiceModeError({ error, onDismiss }: { error: VoiceError | null;
 }
 
 const styles = StyleSheet.create({
-  launch: { flexDirection: 'row', gap: 6, minHeight: 44, paddingHorizontal: 12, borderRadius: 10, alignItems: 'center' },
+  launch: { width: 44, height: 44, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   content: { flexGrow: 1, padding: 28, paddingTop: 32, alignItems: 'center' },
   eyebrow: { fontSize: 9, letterSpacing: 2, color: C.moss, textAlign: 'center' },
   emblem: { marginTop: 30, marginBottom: 26, width: 140, height: 140, justifyContent: 'center', alignItems: 'center' },
