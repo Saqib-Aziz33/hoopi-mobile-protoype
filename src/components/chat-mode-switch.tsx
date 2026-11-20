@@ -1,13 +1,39 @@
-import { Pressable, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
-import { C } from '@/components/ui';
+import { Box } from "@/components/ui/box";
+import { Text } from "@/components/ui/text";
+import { Pressable } from "@/components/ui/pressable";
+import { Ionicons } from "@expo/vector-icons";
+import { C } from "@/components/ui";
 
-export function ChatModeSwitch({ value, onChange, tabWidth = 112 }: { value: 'chat' | 'work'; onChange: (value: 'chat' | 'work') => void; tabWidth?: number }) {
-  const indicator = useAnimatedStyle(() => ({
-    transform: [{ translateX: withTiming(value === 'work' ? tabWidth : 0, { duration: 190, easing: Easing.out(Easing.cubic) }) }],
-  }));
-  return <View style={{ alignSelf: 'flex-start', marginTop: 12 }}>
-    <View style={{ flexDirection: 'row' }}>{(['chat', 'work'] as const).map(mode => <Pressable key={mode} accessibilityRole="tab" accessibilityState={{ selected: value === mode }} onPress={() => onChange(mode)} style={{ width: tabWidth, minHeight: 44, justifyContent: 'center' }}><Text style={{ color: value === mode ? C.primary : C.moss, fontSize: 13, fontWeight: value === mode ? '600' : '400' }}>{mode === 'chat' ? 'Conversation' : 'Work mode'}</Text></Pressable>)}</View>
-    <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 0, bottom: -1, height: 2, width: tabWidth - 28, backgroundColor: C.primary }, indicator]} />
-  </View>;
+export function ChatModeSwitch({
+  value,
+  onChange,
+}: {
+  value: "chat" | "work";
+  onChange: (value: "chat" | "work") => void;
+  tabWidth?: number;
+}) {
+  return (
+    <Box className="flex-row gap-2 pb-3 pt-4">
+      {(["chat", "work"] as const).map((mode) => (
+        <Pressable
+          key={mode}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: value === mode }}
+          onPress={() => onChange(mode)}
+          className={`min-h-11 flex-row items-center gap-2 rounded-full border px-4 py-2 ${value === mode ? "border-primary-500 bg-primary-500" : "border-outline-200 bg-transparent"}`}
+        >
+          <Ionicons
+            name={mode === "chat" ? "chatbubble-outline" : "sparkles-outline"}
+            size={14}
+            color={value === mode ? C.paper : C.moss}
+          />
+          <Text
+            className={`text-xs ${value === mode ? "text-white" : "text-typography-600"}`}
+          >
+            {mode === "chat" ? "Conversation" : "Work with me"}
+          </Text>
+        </Pressable>
+      ))}
+    </Box>
+  );
 }
