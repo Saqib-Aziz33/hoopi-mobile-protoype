@@ -1,141 +1,395 @@
-import React from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeInDown, Easing, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import React from "react";
+import {
+  type StyleProp,
+  type TextInputProps,
+  type ViewStyle,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { Box } from "@/components/ui/box";
+import { Text } from "@/components/ui/text";
+import { Card as GluestackCard } from "@/components/ui/card";
+import {
+  Button as GluestackButton,
+  ButtonText,
+  ButtonSpinner,
+} from "@/components/ui/button";
+import { Input, InputField } from "@/components/ui/input";
+import { Badge, BadgeText } from "@/components/ui/badge";
+import { Pressable } from "@/components/ui/pressable";
+import {
+  FormControl,
+  FormControlLabel,
+  FormControlLabelText,
+} from "@/components/ui/form-control";
+import { C, Layout } from "@/constants/design";
 
-export const C = {
-  canvas: '#FAFAF8',
-  paper: '#FFFFFF',
-  ink: '#171B35',
-  primary: '#4816FB',
-  blue: '#2559FB',
-  cyan: '#02D1FC',
-  moss: '#626D86',
-  line: '#E5E4E9',
-  lavender: '#F1EDFF',
-  blueTint: '#E8F5FF',
-  coral: '#E25974',
-  white: '#FFFFFF',
-  red: '#D53B68',
-  amber: '#C17A16',
-};
+export { C } from "@/constants/design";
+export const editorialFont = "Lora";
+type IconName = keyof typeof Ionicons.glyphMap;
 
-export const editorialFont = Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia' });
-
-export function Screen({ children, style, animate = true }: React.PropsWithChildren<{ style?: ViewStyle; animate?: boolean }>) {
+export function Screen({
+  children,
+  style,
+}: React.PropsWithChildren<{
+  style?: StyleProp<ViewStyle>;
+  animate?: boolean;
+}>) {
   return (
-    <SafeAreaView edges={['top']} style={[styles.screen, style]}>
-      <Animated.View entering={animate ? FadeIn.duration(180) : undefined} style={styles.screenInner}>
+    <SafeAreaView
+      edges={["top"]}
+      style={{ flex: 1, backgroundColor: C.canvas }}
+    >
+      <Box
+        className="w-full flex-1 self-center"
+        style={[
+          { maxWidth: Layout.maxWidth, paddingHorizontal: Layout.gutter },
+          style,
+        ]}
+      >
         {children}
-      </Animated.View>
+      </Box>
     </SafeAreaView>
   );
 }
 
-export function Heading({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
+export function Heading({
+  title,
+  subtitle,
+  action,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+}) {
   return (
-    <Animated.View entering={FadeInDown.duration(240).easing(Easing.out(Easing.cubic))} style={styles.heading}>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-      </View>
+    <Box className="flex-row items-center justify-between gap-3 pb-6 pt-8">
+      <Box className="flex-1">
+        <Text
+          accessibilityRole="header"
+          className="font-editorial text-[36px] leading-[45px] tracking-[-1.2px] text-typography-950"
+        >
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text className="mt-1 text-[13px] leading-5 text-typography-600">
+            {subtitle}
+          </Text>
+        ) : null}
+      </Box>
       {action}
-    </Animated.View>
+    </Box>
   );
 }
 
-export function Card({ children, style }: React.PropsWithChildren<{ style?: ViewStyle }>) {
-  return <Animated.View entering={FadeIn.duration(220)} style={[styles.card, style]}>{children}</Animated.View>;
+export function Card({
+  children,
+  style,
+  className = "",
+}: React.PropsWithChildren<{
+  style?: StyleProp<ViewStyle>;
+  className?: string;
+}>) {
+  return (
+    <GluestackCard
+      variant="outline"
+      className={`rounded-2xl border-outline-200 bg-background-0 p-5 ${className}`}
+      style={style}
+    >
+      {children}
+    </GluestackCard>
+  );
 }
 
-export function Button({ title, onPress, secondary = false, disabled = false, busy = false, style }: { title: string; onPress: () => void; secondary?: boolean; disabled?: boolean; busy?: boolean; style?: ViewStyle }) {
-  const scale = useSharedValue(1);
-  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+export function Button({
+  title,
+  onPress,
+  secondary = false,
+  disabled = false,
+  busy = false,
+  style,
+  icon,
+}: {
+  title: string;
+  onPress: () => void;
+  secondary?: boolean;
+  disabled?: boolean;
+  busy?: boolean;
+  style?: StyleProp<ViewStyle>;
+  icon?: IconName;
+}) {
   return (
-    <Animated.View style={[animatedStyle, style]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={title}
-        accessibilityState={{ disabled: disabled || busy, busy }}
-        disabled={disabled || busy}
-        onPress={onPress}
-        // Reanimated shared values are intentionally updated in native gesture callbacks.
-        // eslint-disable-next-line react-hooks/immutability
-        onPressIn={() => { scale.value = withSpring(0.975, { damping: 16, stiffness: 280 }); }}
-        // eslint-disable-next-line react-hooks/immutability
-        onPressOut={() => { scale.value = withSpring(1, { damping: 13, stiffness: 240 }); }}
-        style={[styles.button, secondary && styles.buttonSecondary, (disabled || busy) && { opacity: 0.62 }]}
+    <GluestackButton
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: disabled || busy, busy }}
+      isDisabled={disabled || busy}
+      onPress={onPress}
+      variant={secondary ? "outline" : "solid"}
+      className={`min-h-[52px] h-auto gap-2 rounded-full px-5 py-3 ${secondary ? "border-outline-200 bg-background-0 data-[active=true]:bg-background-50" : "bg-primary-500 data-[active=true]:bg-primary-600"}`}
+      style={style}
+    >
+      {busy ? (
+        <ButtonSpinner color={secondary ? C.primary : C.white} />
+      ) : icon ? (
+        <Ionicons
+          name={icon}
+          size={18}
+          color={secondary ? C.primary : C.white}
+        />
+      ) : null}
+      <ButtonText
+        className={`text-[15px] font-semibold ${secondary ? "text-primary-500" : "text-white"}`}
       >
-
-        {busy ? <ActivityIndicator color={secondary ? C.primary : C.white} /> : <Text style={[styles.buttonText, secondary && { color: C.primary }]}>{title}</Text>}
-      </Pressable>
-    </Animated.View>
+        {title}
+      </ButtonText>
+    </GluestackButton>
   );
 }
 
-export function IconButton({ name, onPress, disabled = false, accessibilityLabel, style }: { name: keyof typeof Ionicons.glyphMap; onPress: () => void; disabled?: boolean; accessibilityLabel: string; style?: ViewStyle }) {
-  const scale = useSharedValue(1);
-  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+export function IconButton({
+  name,
+  onPress,
+  disabled = false,
+  accessibilityLabel,
+  style,
+  tone = "primary",
+  busy = false,
+}: {
+  name: IconName;
+  onPress: () => void;
+  disabled?: boolean;
+  accessibilityLabel: string;
+  style?: StyleProp<ViewStyle>;
+  tone?: "primary" | "neutral" | "soft";
+  busy?: boolean;
+}) {
+  const background =
+    tone === "primary"
+      ? "bg-primary-500 data-[active=true]:bg-primary-600"
+      : tone === "soft"
+        ? "bg-primary-100 data-[active=true]:bg-primary-200"
+        : "border border-outline-200 bg-transparent data-[active=true]:bg-background-50";
   return (
-    <Animated.View style={[animatedStyle, style]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
-        accessibilityState={{ disabled }}
-        disabled={disabled}
-        onPress={onPress}
-        // Reanimated shared values are intentionally updated in native gesture callbacks.
-        // eslint-disable-next-line react-hooks/immutability
-        onPressIn={() => { scale.value = withSpring(0.92, { damping: 14, stiffness: 280 }); }}
-        // eslint-disable-next-line react-hooks/immutability
-        onPressOut={() => { scale.value = withSpring(1, { damping: 13, stiffness: 240 }); }}
-        style={({ pressed }) => [styles.iconButton, disabled && { opacity: 0.55 }, pressed && { opacity: 0.9 }]}
+    <GluestackButton
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled: disabled || busy, busy }}
+      isDisabled={disabled || busy}
+      onPress={onPress}
+      className={`h-11 w-11 rounded-full p-0 ${background}`}
+      style={style}
+    >
+      {busy ? (
+        <ButtonSpinner color={tone === "primary" ? C.white : C.primary} />
+      ) : (
+        <Ionicons
+          name={name}
+          size={21}
+          color={
+            tone === "primary" ? C.white : tone === "soft" ? C.primary : C.ink
+          }
+        />
+      )}
+    </GluestackButton>
+  );
+}
+
+export function Field({
+  label,
+  plain = false,
+  trailing,
+  ...props
+}: TextInputProps & {
+  label?: string;
+  plain?: boolean;
+  trailing?: React.ReactNode;
+}) {
+  const control = (
+    <Input
+      isDisabled={props.editable === false}
+      variant="outline"
+      className={
+        plain
+          ? "h-auto min-h-11 rounded-none border-0 bg-transparent"
+          : "h-auto min-h-[54px] rounded-xl border-outline-200 bg-background-0 data-[focus=true]:border-primary-500"
+      }
+    >
+      <InputField
+        {...props}
+        aria-label={props.accessibilityLabel ?? label ?? props.placeholder}
+        accessibilityLabel={
+          props.accessibilityLabel ?? label ?? props.placeholder
+        }
+        placeholderTextColor={C.muted}
+        selectionColor={C.primary}
+        className="py-3 text-[15px] text-typography-950"
+      />
+      {trailing}
+    </Input>
+  );
+  if (!label) return control;
+  return (
+    <FormControl>
+      <FormControlLabel className="mb-2">
+        <FormControlLabelText className="text-[13px] font-semibold text-typography-950">
+          {label}
+        </FormControlLabelText>
+      </FormControlLabel>
+      {control}
+    </FormControl>
+  );
+}
+
+export function SectionTitle({
+  children,
+  action,
+}: React.PropsWithChildren<{ action?: React.ReactNode }>) {
+  return (
+    <Box className="mb-2 mt-7 flex-row items-center justify-between">
+      <Text
+        accessibilityRole="header"
+        className="text-[10px] font-medium uppercase tracking-[1.8px] text-typography-950"
       >
-
-        <Ionicons name={name} size={22} color={C.white} />
-      </Pressable>
-    </Animated.View>
+        {children}
+      </Text>
+      {action}
+    </Box>
   );
 }
 
-export function Field(props: TextInputProps) {
-  const [focused, setFocused] = React.useState(false);
-  return <TextInput placeholderTextColor="#8992A8" selectionColor={C.primary} {...props} onFocus={event => { setFocused(true); props.onFocus?.(event); }} onBlur={event => { setFocused(false); props.onBlur?.(event); }} style={[styles.field, focused && { borderColor: C.primary, backgroundColor: C.white }, props.style]} />;
-}
-
-export function SectionTitle({ children }: React.PropsWithChildren) {
-  return <Text style={styles.sectionTitle}>{children}</Text>;
-}
-
-export function EmptyState({ title, message, icon = 'chatbubble-outline' }: { title: string; message: string; icon?: string }) {
+export function EmptyState({
+  title,
+  message,
+  icon = "chatbubble-ellipses-outline",
+  action,
+}: {
+  title: string;
+  message: string;
+  icon?: IconName | "▤" | "✦";
+  action?: React.ReactNode;
+}) {
+  const name =
+    icon === "▤"
+      ? "documents-outline"
+      : icon === "✦"
+        ? "checkmark-done-outline"
+        : icon;
   return (
-    <View style={styles.empty}>
-      <View style={styles.emptyIconWrap}>
-        <Ionicons name={icon === '▤' ? 'documents-outline' : icon === '✦' ? 'file-tray-outline' : 'chatbubble-outline'} size={26} color={C.moss} />
-      </View>
-      <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={styles.emptyMessage}>{message}</Text>
-    </View>
+    <Box className="flex-1 items-center justify-center px-6 py-10">
+      <Box className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-primary-100">
+        <Ionicons name={name} size={29} color={C.primary} />
+      </Box>
+      <Text
+        accessibilityRole="header"
+        className="font-editorial text-center text-[24px] leading-8 tracking-[-0.5px] text-typography-950"
+      >
+        {title}
+      </Text>
+      <Text className="mt-2 max-w-[280px] text-center text-[14px] leading-[22px] text-typography-600">
+        {message}
+      </Text>
+      {action ? <Box className="mt-5">{action}</Box> : null}
+    </Box>
   );
 }
 
-export const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: C.canvas, paddingHorizontal: 20 },
-  screenInner: { flex: 1 },
-  heading: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 22, paddingBottom: 26 },
-  title: { color: C.ink, fontFamily: editorialFont, fontSize: 36, fontWeight: '400', letterSpacing: -1.2 },
-  subtitle: { color: C.moss, fontSize: 14, lineHeight: 20, marginTop: 5 },
-  card: { backgroundColor: C.paper, borderRadius: 12, borderWidth: 1, borderColor: C.line, padding: 16 },
-  button: { overflow: 'hidden', backgroundColor: C.primary, minHeight: 52, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
-  buttonSecondary: { backgroundColor: C.paper, borderWidth: 1, borderColor: C.line },
-  buttonText: { color: C.white, fontSize: 15, fontWeight: '700' },
-  iconButton: { width: 44, height: 44, borderRadius: 10, backgroundColor: C.primary, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  field: { minHeight: 54, backgroundColor: C.paper, borderRadius: 10, borderWidth: 1, borderColor: C.line, paddingHorizontal: 15, color: C.ink, fontSize: 16 },
-  sectionTitle: { color: C.ink, fontSize: 13, fontWeight: '600', letterSpacing: 0, marginBottom: 12, marginTop: 10 },
-  empty: { alignItems: 'center', paddingHorizontal: 30, paddingVertical: 42 },
-  emptyIconWrap: { width: 48, height: 48, borderRadius: 0, alignItems: 'center', justifyContent: 'center', marginBottom: 15 },
-  emptyIcon: { color: C.primary, fontSize: 30 },
-  emptyTitle: { textAlign: 'center', color: C.ink, fontFamily: editorialFont, fontSize: 25, fontWeight: '400', letterSpacing: -0.5 },
-  emptyMessage: { color: C.moss, fontSize: 14, lineHeight: 21, textAlign: 'center', marginTop: 7 },
-});
+export function StatusBadge({
+  children,
+  tone = "neutral",
+}: React.PropsWithChildren<{
+  tone?: "neutral" | "success" | "warning" | "error" | "primary";
+}>) {
+  const tones = {
+    neutral: { bg: C.canvas, color: C.moss },
+    primary: { bg: C.lavender, color: C.primary },
+    success: { bg: C.greenTint, color: C.green },
+    warning: { bg: "#FFF5E3", color: C.amber },
+    error: { bg: "#FCEEF0", color: C.red },
+  };
+  return (
+    <Badge
+      action={tone === "primary" ? "info" : tone === "neutral" ? "muted" : tone}
+      className="gap-1.5 rounded-full px-2.5 py-1"
+      style={{ backgroundColor: tones[tone].bg }}
+    >
+      <Box
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ backgroundColor: tones[tone].color }}
+      />
+      <BadgeText
+        className="text-[11px] font-medium normal-case"
+        style={{ color: tones[tone].color }}
+      >
+        {children}
+      </BadgeText>
+    </Badge>
+  );
+}
+
+export function SegmentedControl<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T;
+  options: readonly { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <Box
+      accessibilityRole="tablist"
+      className="flex-row gap-6 border-b border-outline-200"
+    >
+      {options.map((option) => (
+        <Pressable
+          key={option.value}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: option.value === value }}
+          onPress={() => onChange(option.value)}
+          className={`min-h-11 items-center justify-center border-b-2 py-2 ${value === option.value ? "border-primary-500" : "border-transparent"}`}
+        >
+          <Text
+            className={`text-[13px] ${value === option.value ? "font-semibold text-typography-950" : "text-typography-600"}`}
+          >
+            {option.label}
+          </Text>
+        </Pressable>
+      ))}
+    </Box>
+  );
+}
+
+export function CollectionSummary({
+  icon,
+  title,
+  description,
+  count,
+  detail,
+}: {
+  icon: IconName;
+  title: string;
+  description: string;
+  count: string;
+  detail: string;
+}) {
+  return (
+    <Box className="mb-1 flex-row items-center gap-4 border-b border-t border-outline-200 py-5">
+      <Box className="flex-1">
+        <Text className="font-editorial text-[21px] leading-7 text-typography-950">
+          {title}
+        </Text>
+        <Text className="mt-1.5 text-xs leading-[19px] text-typography-600">
+          {description}
+        </Text>
+        <Text className="mt-2 text-[10px] uppercase tracking-[1px] text-typography-600">
+          {detail}
+        </Text>
+      </Box>
+      <Box className="items-center gap-1 pl-2">
+        <Ionicons name={icon} size={22} color={C.primary} />
+        <Text className="font-editorial text-[34px] leading-[44px] text-primary-500">
+          {count}
+        </Text>
+      </Box>
+    </Box>
+  );
+}

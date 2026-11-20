@@ -6,8 +6,8 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "hoopimobile",
-    "backgroundColor": "#F8F9FF",
-    "primaryColor": "#4816FB",
+    "backgroundColor": "#FAF7F1",
+    "primaryColor": "#713F52",
     "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/images/icon.png",
@@ -19,7 +19,7 @@
     "android": {
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "backgroundColor": "#F8F9FF",
+        "backgroundColor": "#FAF7F1",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false,
@@ -34,7 +34,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F8F9FF",
+          "backgroundColor": "#FAF7F1",
           "image": "./assets/images/hoopi-mark.png",
           "imageWidth": 112
         }
