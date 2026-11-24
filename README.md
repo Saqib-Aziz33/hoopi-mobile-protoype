@@ -112,6 +112,20 @@ eas build --platform android --profile preview
 
 See [docs/android-apk-build.md](docs/android-apk-build.md) for EAS account requirements, installation instructions, and the distinction between APK testing builds and Play Store AAB builds.
 
+## Build for iOS
+
+First, register your iOS device with EAS:
+
+```bash
+eas device:create
+```
+
+Then create an iOS build using the `preview` profile:
+
+```bash
+eas build --platform ios --profile preview
+```
+
 ## Related projects
 
 See the [UI review notes](docs/ui-review.md) for recent motion and reliability changes, stream regression checks, and a device interaction checklist.
