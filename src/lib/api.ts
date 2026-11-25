@@ -49,10 +49,17 @@ async function refreshAccessToken() {
   return refreshInFlight;
 }
 
-export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+export async function api<T>(path: string, init: RequestInit = {}, workspaceOverride?: number): Promise<T> {
   const perform = async () => {
     const token = await tokenStore.get();
-    const workspaceId = await getWorkspaceId();
+    const workspaceId = workspaceOverride ?? await getWorkspaceId();
     const headers = new Headers(init.headers);
     if (!(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
     if (token) headers.set('Authorization', `Bearer ${token}`);
@@ -68,7 +75,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     const detail = body?.detail;
-    throw new Error(typeof detail === 'string' ? detail : detail?.message ?? body?.message ?? `Request failed (${response.status})`);
+    throw new ApiError(typeof detail === 'string' ? detail : detail?.message ?? body?.message ?? `Request failed (${response.status})`, response.status);
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
@@ -117,9 +124,9 @@ export const knowledgeApi = {
   },
 };
 
-export async function streamChat(payload: ChatRequest, onEvent: (event: Record<string, unknown>) => void, signal?: AbortSignal) {
+export async function streamChat(payload: ChatRequest, onEvent: (event: Record<string, unknown>) => void, signal?: AbortSignal, workspaceOverride?: number) {
   const token = await tokenStore.get();
-  const workspaceId = await getWorkspaceId();
+  const workspaceId = workspaceOverride ?? await getWorkspaceId();
   const headers = new Headers({ 'Content-Type': 'application/json', Accept: 'text/event-stream' });
   if (token) headers.set('Authorization', `Bearer ${token}`);
   if (workspaceId) headers.set('X-Workspace-Id', String(workspaceId));

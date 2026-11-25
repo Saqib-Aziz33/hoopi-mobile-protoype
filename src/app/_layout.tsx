@@ -1,3 +1,4 @@
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
@@ -21,22 +22,24 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
   if (!fontsLoaded && !fontError) return null;
   return (
-    <GluestackUIProvider>
-      <KeyboardProvider>
-        <AuthProvider>
-          <StatusBar style="dark" />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: C.canvas },
-            }}
-          >
-            <Stack.Screen name="index" />
-            <Stack.Screen name="login" />
-            <Stack.Screen name="(tabs)" />
-          </Stack>
-        </AuthProvider>
-      </KeyboardProvider>
-    </GluestackUIProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <GluestackUIProvider>
+        <KeyboardProvider>
+          <AuthProvider>
+            <StatusBar style="dark" />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: C.canvas },
+              }}
+            >
+              <Stack.Screen name="index" />
+              <Stack.Screen name="login" />
+              <Stack.Screen name="(tabs)" />
+            </Stack>
+          </AuthProvider>
+        </KeyboardProvider>
+      </GluestackUIProvider>
+    </GestureHandlerRootView>
   );
 }
