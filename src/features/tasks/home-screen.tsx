@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
+import {
+  FlatList,
+  Keyboard,
+  Pressable,
+  RefreshControl,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useRouter, type Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { C, editorialFont } from "@/components/ui";
@@ -68,12 +77,11 @@ export function TasksHomeScreen() {
   }, [context.workspace?.id, archived, boards.isSuccess, boards.data?.length]);
   const requests = attentionItems(attention.data);
   const all = boards.data ?? [];
+  const query = search.trim().toLowerCase();
   const visible = all.filter(
     (board) =>
       board.is_archived === archived &&
-      `${board.name} ${board.description}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
+      `${board.name} ${board.description}`.toLowerCase().includes(query),
   );
   const open = all
     .filter((board) => !board.is_archived)
@@ -108,8 +116,13 @@ export function TasksHomeScreen() {
           message="Join or create a workspace to use Tasks."
         />
       ) : (
-        <>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior="padding"
+          automaticOffset
+        >
           <FlatList
+            style={{ flex: 1 }}
             data={visible}
             keyExtractor={(board) => String(board.id)}
             contentContainerStyle={{
@@ -119,6 +132,7 @@ export function TasksHomeScreen() {
               flexGrow: 1,
             }}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             refreshControl={
               <RefreshControl
                 refreshing={boards.isRefetching}
@@ -226,12 +240,6 @@ export function TasksHomeScreen() {
                     </Text>
                   </Pressable>
                 </View>
-                <TaskInput
-                  label="Find a board"
-                  placeholder="Search your boards…"
-                  value={search}
-                  onChangeText={setSearch}
-                />
                 <View style={{ flexDirection: "row", gap: 8 }}>
                   <Chip
                     label="Active"
@@ -271,19 +279,19 @@ export function TasksHomeScreen() {
                 <View style={{ gap: 16 }}>
                   <Empty
                     title={
-                      search
+                      query
                         ? "No matching boards"
                         : archived
                           ? "No archived boards"
                           : "A fresh place to begin."
                     }
                     message={
-                      search
+                      query
                         ? "Try a different search."
                         : "Create a board, choose a template, or describe your project to Hoopi."
                     }
                   />
-                  {!search && !archived ? (
+                  {!query && !archived ? (
                     <Action
                       title="Create a board"
                       onPress={() => setCreateOpen(true)}
@@ -295,103 +303,247 @@ export function TasksHomeScreen() {
             renderItem={({ item: board }) => {
               const completed = Math.max(
                 0,
-                board.task_count - board.open_task_count,
+                Math.min(
+                  board.task_count,
+                  board.task_count - board.open_task_count,
+                ),
               );
+              const progress = board.task_count
+                ? Math.round((completed / board.task_count) * 100)
+                : 0;
               const waiting = requests.filter(
                 (row) => row.boardId === board.id,
               ).length;
               return (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Open ${board.name}, ${board.open_task_count} open tasks`}
+                  accessibilityLabel={`Open ${board.name}, ${board.open_task_count} open tasks, ${progress}% complete${waiting ? `, ${waiting} need your attention` : ""}`}
                   onPress={() => openBoard(board.id)}
                   style={({ pressed }) => [
                     s.card,
-                    { opacity: pressed ? 0.8 : 1 },
+                    {
+                      padding: 18,
+                      gap: 14,
+                      borderRadius: 20,
+                      backgroundColor: pressed ? C.lavender : C.paper,
+                    },
                   ]}
                 >
                   <View
                     style={{
                       flexDirection: "row",
-                      alignItems: "center",
+                      alignItems: "flex-start",
                       gap: 12,
                     }}
                   >
                     <View
                       style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 12,
-                        backgroundColor: C.lavender,
+                        width: 42,
+                        height: 42,
+                        borderRadius: 13,
+                        backgroundColor: archived ? C.canvas : C.lavender,
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
                       <Ionicons
-                        name="albums-outline"
-                        color={C.primary}
-                        size={20}
+                        name={archived ? "archive-outline" : "albums-outline"}
+                        color={archived ? C.moss : C.primary}
+                        size={21}
                       />
                     </View>
-                    <Text
-                      style={{
-                        fontFamily: editorialFont,
-                        fontSize: 20,
-                        color: C.ink,
-                        flex: 1,
-                      }}
-                    >
-                      {board.name}
-                    </Text>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text
+                        numberOfLines={2}
+                        style={{
+                          fontFamily: editorialFont,
+                          fontSize: 21,
+                          lineHeight: 28,
+                          color: C.ink,
+                        }}
+                      >
+                        {board.name}
+                      </Text>
+                      <Text
+                        style={{ color: C.moss, fontSize: 11, lineHeight: 16 }}
+                      >
+                        {archived ? "Archived board · " : ""}
+                        {board.column_count}{" "}
+                        {board.column_count === 1 ? "status" : "statuses"}
+                      </Text>
+                    </View>
                     <Ionicons
-                      name="chevron-forward"
+                      name="arrow-forward"
                       size={18}
-                      color={C.muted}
+                      color={C.primary}
+                      style={{ marginTop: 5 }}
                     />
                   </View>
                   {board.description ? (
-                    <Text numberOfLines={2} style={s.hint}>
+                    <Text
+                      numberOfLines={2}
+                      style={{ color: C.moss, fontSize: 13, lineHeight: 20 }}
+                    >
                       {board.description}
                     </Text>
                   ) : null}
                   <View
                     style={{
-                      height: 3,
-                      backgroundColor: C.line,
-                      borderRadius: 2,
+                      borderTopWidth: 1,
+                      borderTopColor: C.line,
+                      paddingTop: 12,
+                      gap: 10,
                     }}
                   >
                     <View
                       style={{
-                        width: `${board.task_count ? (completed / board.task_count) * 100 : 0}%`,
-                        height: 3,
-                        backgroundColor: C.primary,
-                        borderRadius: 2,
+                        flexDirection: "row",
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 8,
                       }}
-                    />
-                  </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Text style={s.hint}>
-                      {board.open_task_count} open · {board.task_count} tasks
-                    </Text>
-                    {waiting ? (
-                      <Text style={{ color: C.amber, fontSize: 12 }}>
-                        {waiting} need you
+                    >
+                      <Text
+                        style={{ color: C.moss, fontSize: 12, lineHeight: 20 }}
+                      >
+                        <Text
+                          style={{
+                            color: C.ink,
+                            fontWeight: "600",
+                            fontSize: 14,
+                          }}
+                        >
+                          {board.open_task_count} open
+                        </Text>{" "}
+                        · {board.task_count} total
                       </Text>
-                    ) : (
-                      <Text style={s.hint}>{board.column_count} statuses</Text>
-                    )}
+                      {waiting ? (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 5,
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 8,
+                            backgroundColor: C.peach,
+                          }}
+                        >
+                          <Ionicons
+                            name="chatbubble-ellipses-outline"
+                            size={13}
+                            color={C.amber}
+                          />
+                          <Text
+                            style={{
+                              color: C.amber,
+                              fontSize: 11,
+                              fontWeight: "500",
+                            }}
+                          >
+                            {waiting} need you
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <View
+                        style={{
+                          flex: 1,
+                          height: 4,
+                          borderRadius: 2,
+                          backgroundColor: C.line,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: `${progress}%`,
+                            height: 4,
+                            borderRadius: 2,
+                            backgroundColor:
+                              progress === 100 ? C.green : C.primary,
+                          }}
+                        />
+                      </View>
+                      <Text
+                        style={{
+                          color: progress === 100 ? C.green : C.moss,
+                          fontSize: 11,
+                          fontWeight: "500",
+                        }}
+                      >
+                        {board.task_count
+                          ? `${progress}% complete`
+                          : "No tasks yet"}
+                      </Text>
+                    </View>
                   </View>
                 </Pressable>
               );
             }}
           />
-        </>
+          <View
+            style={{
+              paddingHorizontal: 22,
+              paddingTop: 10,
+              paddingBottom: 12,
+              borderTopWidth: 1,
+              borderTopColor: C.line,
+              backgroundColor: C.canvas,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                minHeight: 50,
+                paddingLeft: 14,
+                paddingRight: 4,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: C.line,
+                backgroundColor: C.paper,
+              }}
+            >
+              <Ionicons name="search-outline" size={20} color={C.moss} />
+              <TextInput
+                accessibilityLabel="Find a board"
+                placeholder="Search your boards…"
+                placeholderTextColor={C.muted}
+                selectionColor={C.primary}
+                value={search}
+                onChangeText={setSearch}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+                onSubmitEditing={Keyboard.dismiss}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  color: C.ink,
+                  fontSize: 15,
+                  paddingVertical: 14,
+                }}
+              />
+              {search ? (
+                <TaskIconButton
+                  icon="close-circle"
+                  label="Clear board search"
+                  onPress={() => setSearch("")}
+                />
+              ) : null}
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       )}
       {workspaceOpen ? (
         <ChoiceSheet
