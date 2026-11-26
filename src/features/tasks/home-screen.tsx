@@ -130,52 +130,60 @@ export function TasksHomeScreen() {
               />
             }
             ListHeaderComponent={
-              <View style={{ gap: 18, marginBottom: 8 }}>
+              <View style={{ gap: 14, marginBottom: 8 }}>
                 <View
                   style={[
                     s.card,
-                    { backgroundColor: C.primary, borderWidth: 0, padding: 22 },
+                    {
+                      backgroundColor: C.primary,
+                      borderWidth: 0,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      flexDirection: "row",
+                      alignItems: "stretch",
+                      gap: 12,
+                    },
                   ]}
                 >
-                  <Text
-                    style={{
-                      fontFamily: editorialFont,
-                      fontSize: 29,
-                      lineHeight: 38,
-                      color: C.white,
-                    }}
-                  >
-                    Make room for what’s next.
-                  </Text>
-                  <View style={{ flexDirection: "row", gap: 26, marginTop: 6 }}>
-                    {[
-                      [open, "Open tasks"],
-                      [attention.data?.running_now ?? 0, "Agents working"],
-                      [requests.length, "Need you"],
-                    ].map(([value, label]) => (
-                      <View key={label}>
-                        <Text
-                          style={{
-                            color: C.white,
-                            fontSize: 25,
-                            fontFamily: editorialFont,
-                          }}
-                        >
-                          {value}
-                        </Text>
-                        <Text
-                          style={{
-                            color: C.white,
-                            opacity: 0.75,
-                            fontSize: 10,
-                            marginTop: 4,
-                          }}
-                        >
-                          {label}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
+                  {[
+                    [open, "Open tasks"],
+                    [attention.data?.running_now ?? 0, "Agents working"],
+                    [requests.length, "Need you"],
+                  ].map(([value, label], index) => (
+                    <View
+                      key={label}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        paddingLeft: index ? 12 : 0,
+                        borderLeftWidth: index ? 1 : 0,
+                        borderLeftColor: "rgba(255, 253, 250, 0.2)",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: C.white,
+                          fontSize: 23,
+                          lineHeight: 29,
+                          fontFamily: editorialFont,
+                        }}
+                      >
+                        {value}
+                      </Text>
+                      <Text
+                        style={{
+                          color: C.white,
+                          opacity: 0.85,
+                          fontSize: 11,
+                          lineHeight: 16,
+                          marginTop: 2,
+                        }}
+                      >
+                        {label}
+                      </Text>
+                    </View>
+                  ))}
                 </View>
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <View style={{ flex: 1 }}>
@@ -195,7 +203,9 @@ export function TasksHomeScreen() {
                     />
                   </View>
                 </View>
+                {/* Temporarily hide the home alert; keep it ready to re-enable.
                 <AttentionList boardId={undefined} />
+                */}
                 <View
                   style={{
                     flexDirection: "row",
