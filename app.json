@@ -66,7 +66,9 @@
             "extraProguardRules": "# WebRTC 155 ships an unused AV1 JNI bridge without its decoder interface.\n-dontwarn org.webrtc.Dav1dDecoder$Natives"
           }
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -8,6 +8,7 @@ import { useAuth } from "@/context/auth";
 
 const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
   chat: "chatbubble-ellipses-outline",
+  tasks: "checkbox-outline",
   work: "checkmark-done-outline",
   knowledge: "book-outline",
   files: "folder-outline",
@@ -79,7 +80,8 @@ export default function TabsLayout() {
       })}
     >
       <Tabs.Screen name="chat" options={{ title: "Chat" }} />
-      <Tabs.Screen name="work" options={{ title: "Work" }} />
+      <Tabs.Screen name="tasks" options={{ title: "Tasks" }} />
+      <Tabs.Screen name="work" options={{ href: null }} />
       <Tabs.Screen name="knowledge" options={{ title: "Knowledge" }} />
       <Tabs.Screen name="files" options={{ title: "Files" }} />
       <Tabs.Screen name="settings" options={{ title: "You" }} />
